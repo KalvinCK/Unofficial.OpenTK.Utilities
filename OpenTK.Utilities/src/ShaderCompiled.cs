@@ -48,15 +48,16 @@ public struct ShaderCompiled : IShaderCompiled, IDisposable
     public static ShaderCompiled CompileFromFileCompute(string shaderFilePath, string name = "UNAMED")
         => CompileFromFile(ShaderType.ComputeShader, shaderFilePath, name);
     
-
     public static ShaderCompiled CompileFromFile(ShaderType ShaderType, string shaderFilePath, string name = "UNAMED")
     {
-        //shaderFilePath = Path.Combine("resources/shaders", shaderFilePath);
+        shaderFilePath = Path.Combine("resources/shaders", shaderFilePath);
 
         string srcShader = IncludeFile(shaderFilePath, name);
 
         return CompileFromText(ShaderType, srcShader, name);
     }
+
+    #region Process
     public static ShaderCompiled CompileFromText(ShaderType ShaderType, string @srcShader, string name = "UNAMED")
     {
         var shaderID = GL.CreateShader(ShaderType);
@@ -111,4 +112,5 @@ public struct ShaderCompiled : IShaderCompiled, IDisposable
         
         return string.Join(Environment.NewLine, lines);
     }
+    #endregion
 }

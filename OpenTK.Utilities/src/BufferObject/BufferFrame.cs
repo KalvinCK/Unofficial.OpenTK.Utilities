@@ -62,17 +62,13 @@ public class BufferFrame<T> :
         Array.Clear(MemoryData);
         CountCurrentFrame = 0;
     }
-    public void Bind()
+    public void Bind(BufferTarget BufferTarget)
     {
-        GL.BindBuffer(Target, BufferID);
+        GL.BindBuffer(BufferTarget, BufferID);
     }
-    public void BindBufferBase(int BindingIndex)
+    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int BindingIndex)
     {
-        GL.BindBufferBase((BufferRangeTarget)Target, BindingIndex, BufferID);
-    }
-    public void ClearContext()
-    {
-        GL.BindBuffer(Target, 0);
+        GL.BindBufferBase(BufferRangeTarget, BindingIndex, BufferID);
     }
     public override string ToString()
     {

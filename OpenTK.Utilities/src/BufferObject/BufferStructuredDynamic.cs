@@ -4,45 +4,45 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities;
 
-public class BufferStructuredDynamic<T>(BufferTarget BufferTarget, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw) : 
+public class BufferStructuredDynamic<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw) : 
     IBufferObject, IDisposable where T : struct
 {
-    public BufferTarget Target { get; } = BufferTarget;
-    public BufferUsageHint UsageHint { get; } = BufferUsageHint;
-    public string DebugName { get; set; } = "UNNAMED";
-    public int BufferID { get; } = IBufferObject.CreateBuffer();
     public int Stride { get; } = Unsafe.SizeOf<T>();
+    public string DebugName { get; set; } = IBufferObject.Unnamed;
+    public BufferUsageHint UsageHint { get; private set; } = BufferUsageHint;
+    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
+    public bool HasAllocate { get; private set; } = false;
     public int Count { get; protected set; }
     public int MemorySize => Count * Stride;
 
     #region Init
-    public BufferStructuredDynamic(BufferTarget BufferTarget, int initialCount, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw) 
-        : this(BufferTarget, BufferUsageHint) 
+    public BufferStructuredDynamic(int initialCount, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw) 
+        : this(BufferUsageHint) 
     {
         ToAllocate(initialCount);
     }
-    public BufferStructuredDynamic(BufferTarget BufferTarget, T[] initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
-        : this(BufferTarget, BufferUsageHint)
+    public BufferStructuredDynamic(T[] initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
+        : this(BufferUsageHint)
     {
         ToAllocate(initStructuredCollection);
     }
-    public BufferStructuredDynamic(BufferTarget BufferTarget, Span<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
-        : this(BufferTarget, BufferUsageHint)
+    public BufferStructuredDynamic(Span<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
+        : this(BufferUsageHint)
     {
         ToAllocate(initStructuredCollection);
     }
-    public BufferStructuredDynamic(BufferTarget BufferTarget, ReadOnlySpan<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
-        : this(BufferTarget, BufferUsageHint) 
+    public BufferStructuredDynamic(ReadOnlySpan<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
+        : this(BufferUsageHint) 
     {
         ToAllocate(initStructuredCollection);
     }
-    public BufferStructuredDynamic(BufferTarget BufferTarget, List<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
-        : this(BufferTarget, BufferUsageHint) 
+    public BufferStructuredDynamic(List<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
+        : this(BufferUsageHint) 
     {
         ToAllocate(initStructuredCollection);
     }
-    public BufferStructuredDynamic(BufferTarget BufferTarget, IReadOnlyList<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
-        : this(BufferTarget, BufferUsageHint) 
+    public BufferStructuredDynamic(IReadOnlyList<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
+        : this(BufferUsageHint) 
     {
         ToAllocate(initStructuredCollection);
     }
@@ -142,21 +142,17 @@ public class BufferStructuredDynamic<T>(BufferTarget BufferTarget, BufferUsageHi
     }
     #endregion
 
-    public void Bind()
+    public void Bind(BufferTarget BufferTarget)
     {
-        GL.BindBuffer(Target, BufferID);
+        GL.BindBuffer(BufferTarget, BufferID);
     }
-    public void BindBufferBase(int bindingIndex)
+    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int BindingIndex)
     {
-        GL.BindBufferBase((BufferRangeTarget)Target, bindingIndex, BufferID);
-    }
-    public void ClearContext()
-    {
-        GL.BindBuffer(Target, 0);
+        GL.BindBufferBase(BufferRangeTarget, BindingIndex, BufferID);
     }
     public override string ToString()
     {
-        return $"Target: [{Target}] Stride: [{Stride}] Count of elements: [{Count}] Total capacity in bytes: [{MemorySize}]\n";
+        return $"Stride: [{Stride}] Count of elements: [{Count}] Total capacity in bytes: [{MemorySize}]\n";
     }
     public void Dispose()
     {
@@ -168,7 +164,10 @@ public class BufferStructuredDynamic<T>(BufferTarget BufferTarget, BufferUsageHi
         if (disposing)
         {
             GL.DeleteBuffer(BufferID);
+            DebugName = IBufferObject.Unnamed;
+            BufferID = 0;
             Count = 0;
+            UsageHint = 0;
         }
     }
 }

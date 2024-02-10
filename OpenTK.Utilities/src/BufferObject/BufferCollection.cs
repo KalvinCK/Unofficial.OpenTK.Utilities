@@ -4,15 +4,13 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities;
 
-
-public class BufferCollection<T>(BufferTarget bufferTarget) :
+public class BufferCollection<T>() :
     IBufferObject, IDisposable where T : struct
 {
     // Used to control the buffer structure
     private readonly List<T> CollectionInternal = [];
 
     public List<T> CollectionData { get { return CollectionInternal; } }
-    public BufferTarget Target { get; } = bufferTarget;
     public BufferUsageHint UsageHint { get; } = BufferUsageHint.DynamicDraw;
     public int BufferID { get; } = IBufferObject.CreateBuffer();
     public int Stride { get; } = Unsafe.SizeOf<T>();
@@ -93,21 +91,17 @@ public class BufferCollection<T>(BufferTarget bufferTarget) :
         UpdateCollectionBuffer();
 
     }
-    public void Bind()
+    public void Bind(BufferTarget BufferTarget)
     {
-        GL.BindBuffer(Target, BufferID);
+        GL.BindBuffer(BufferTarget, BufferID);
     }
-    public void BindBufferBase(int BindingIndex)
+    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int BindingIndex)
     {
-        GL.BindBufferBase((BufferRangeTarget)Target, BindingIndex, BufferID);
-    }
-    public void ClearContext()
-    {
-        GL.BindBuffer(Target, 0);
+        GL.BindBufferBase(BufferRangeTarget, BindingIndex, BufferID);
     }
     public override string ToString()
     {
-        return $"Target: [{Target}] Stride: [{Stride}] Count of elements: [{Count}] Total capacity in bytes: [{MemorySize}]\n";
+        return $"Stride: [{Stride}] Count of elements: [{Count}] Total capacity in bytes: [{MemorySize}]\n";
     }
     public void Dispose()
     {

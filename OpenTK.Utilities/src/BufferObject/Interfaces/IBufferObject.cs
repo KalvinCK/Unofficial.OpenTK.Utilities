@@ -10,11 +10,6 @@ public interface IBufferObject : IBuffer
     public int Stride { get; }
 
     /// <summary>
-    /// Target denominated for buffer.
-    /// </summary>
-    public BufferTarget Target { get; }
-
-    /// <summary>
     /// Count of elements allocated to the buffer.
     /// </summary>
     public int Count { get; }
@@ -27,22 +22,26 @@ public interface IBufferObject : IBuffer
     /// <summary>
     /// Bind buffer in context.
     /// </summary>
-    public void Bind();
+    public void Bind(BufferTarget BufferTarget);
 
     /// <summary>
     /// Link to an index.
     /// </summary>
     /// <param name="BufferRangeTarget">Buffer type.</param>
     /// <param name="bindingIndex"></param>
-    public void BindBufferBase(int bindingIndex);
+    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int bindingIndex);
 
     /// <summary>
     /// Clears the context for this type of buffer.
     /// </summary>
-    public void ClearContext();
+    public static void ClearContext(BufferTarget BufferTarget)
+    {
+        GL.BindBuffer(BufferTarget, 0);
+    }
 
     internal static int CreateBuffer()
     {
         GL.CreateBuffers(1, out int buffer); return buffer;
     }
+    internal static string Unnamed = "UNNAMED";
 }

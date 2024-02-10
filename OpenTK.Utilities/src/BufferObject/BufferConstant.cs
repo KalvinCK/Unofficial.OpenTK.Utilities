@@ -25,17 +25,13 @@ public class BufferConstant<T> :
         GL.NamedBufferStorage(BufferID, MemorySize, ref InitData, BufferStorageFlags.DynamicStorageBit);
         _Data = InitData;
     }
-    public virtual void Bind()
+    public void Bind(BufferTarget BufferTarget)
     {
-        GL.BindBuffer(Target, BufferID);
+        GL.BindBuffer(BufferTarget, BufferID);
     }
-    public virtual void BindBufferBase(int bindingIndex)
+    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int BindingIndex)
     {
-        GL.BindBufferBase((BufferRangeTarget)Target, bindingIndex, BufferID);
-    }
-    public virtual void ClearContext()
-    {
-        GL.BindBuffer(Target, 0);
+        GL.BindBufferBase(BufferRangeTarget, BindingIndex, BufferID);
     }
     private void UpdateRegion<TValue>(int offsetInBytes, int sizeInBytes, TValue Data) where TValue : struct
     {

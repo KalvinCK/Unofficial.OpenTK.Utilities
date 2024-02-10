@@ -2,10 +2,9 @@
 
 namespace OpenTK.Utilities;
 
-public class BufferUnstructured(BufferTarget BufferTarget) : IBuffer, IDisposable
+public class BufferUnstructured : IBuffer, IDisposable
 {
-    public BufferTarget Target { get; } = BufferTarget;
-    public int BufferID { get; } = IBufferObject.CreateBuffer();
+    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
     public int MemoryBytesSize { get; protected set; }
     public void ToAllocateStaticMemory(int bytesSize, IntPtr Data, BufferStorageFlags BufferStorageFlags = BufferStorageFlags.DynamicStorageBit)
     {
@@ -50,22 +49,18 @@ public class BufferUnstructured(BufferTarget BufferTarget) : IBuffer, IDisposabl
         UpdateMemory(bytesOffset, bytesSize, IntPtr.Zero);
     }
 
-    public virtual void Copy<TBuffer>(TBuffer writerBuffer, int readOffsetInBytes, int writeOffsetInBytes, int bytesSize) where TBuffer : IBufferObject
+    public void Copy<TBuffer>(TBuffer writerBuffer, int readOffsetInBytes, int writeOffsetInBytes, int bytesSize) where TBuffer : IBufferObject
     {
         GL.CopyNamedBufferSubData(BufferID, writerBuffer.BufferID, readOffsetInBytes, writeOffsetInBytes, bytesSize);
     }
 
-    public void Bind()
+    public void Bind(BufferTarget BufferTarget)
     {
-        GL.BindBuffer(Target, BufferID);
+        GL.BindBuffer(BufferTarget, BufferID);
     }
-    public void BindBufferBase(int bindingIndex)
+    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int BindingIndex)
     {
-        GL.BindBufferBase((BufferRangeTarget)Target, bindingIndex, BufferID);
-    }
-    public void ClearContext()
-    {
-        GL.BindBuffer(Target, 0);
+        GL.BindBufferBase(BufferRangeTarget, BindingIndex, BufferID);
     }
     public void Dispose()
     {
@@ -77,6 +72,7 @@ public class BufferUnstructured(BufferTarget BufferTarget) : IBuffer, IDisposabl
         if (disposing)
         {
             GL.DeleteBuffer(BufferID);
+            BufferID = 0;
         }
     }
 }
