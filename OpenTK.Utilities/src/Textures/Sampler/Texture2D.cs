@@ -1,95 +1,107 @@
-﻿using OpenTK.Graphics.OpenGL4;
+﻿using System.Drawing;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
-using System.Drawing;
 
 namespace OpenTK.Utilities.Textures;
 
 public class Texture2D() : TexturesImplements(TextureTarget2d.Texture2D), ITexture2D
 {
-    public int Levels => base._Levels;
-    public int Width => base._Width;
-    public int Height => base._Height;
-    public Size Size => new Size(Width, Height);
-    public TextureMinFilter MinFilter => base._MinFilter;
-    public TextureMagFilter MagFilter => base._MagFilter;
-    public TextureWrapMode WrapModeS => base._WrapModeS;
-    public TextureWrapMode WrapModeT => base._WrapModeT;
-    public Texture2D(PixelData<float> pixelData, int levels, PixelDescription description, TextureFiltering filtering, Texture2DWrapping wraping) : this()
+    public Texture2D(SizedInternalFormat SizedInternalFormat, int width, int height, int levels = 1)
+        : this()
     {
-        ToAllocate(description.InternalFormat, pixelData.Width, pixelData.Height, levels);
-        Update(pixelData.Width, pixelData.Height, description.Format, description.Type, pixelData.Data);
+        this.ToAllocate(SizedInternalFormat, width, height, levels);
     }
-    public Texture2D(SizedInternalFormat SizedInternalFormat, int width, int height, int levels = 1) : this()
+
+    public new int Width => base.Width;
+
+    public new int Height => base.Height;
+
+    public Size Size => new Size(base.Width, base.Height);
+
+    public Texture2DWrapping Wrapping
     {
-        base.NewAllocation(SizedInternalFormat, width, height, 1, levels);
+        get => new (this.WrapModeS, this.WrapModeT);
+        set
+        {
+            this.SetWrapModeS(value.WrapModeS);
+            this.SetWrapModeT(value.WrapModeT);
+        }
     }
-    public void ToAllocate(SizedInternalFormat SizedInternalFormat, int width, int height, int levels = 1)
-    {
-        base.NewAllocation(SizedInternalFormat, width, height, 1, levels);
-    }
+
     public Vector2i GetSizeMipmap(int level = 0)
     {
-        base.GetSizeMipmap(out var width, out var height, out _, level);
-        return new Vector2i(width, height);
+        this.GetSizeMipmap(out var width, out var layer, out _, level);
+        return new Vector2i(width, layer);
     }
-    public void GetSizeMipmap(out int width, out int height, int level = 0)
+
+    public void GetSizeMipmap(out int width, out int layer, int level = 0)
     {
-        base.GetSizeMipmap(out width, out height, out _, level);
+        this.GetSizeMipmap(out width, out layer, out _, level);
     }
-    public void SetWrapping(TextureWrapMode wrapS, TextureWrapMode wrapT)
+
+    public void ToAllocate(SizedInternalFormat SizedInternalFormat, int width, int height, int levels = 1)
     {
-        base.SetWrapMode(wrapS, wrapT);
+        this.NewAllocation(SizedInternalFormat, width, height, 1, levels);
     }
-    public void SetWrapping(Texture2DWrapping wrapping)
+
+    public void Update<T>(int width, int height, PixelFormat pixelFormat, PixelType pixelType, List<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0)
+        where T : unmanaged
     {
-        base.SetWrapMode(wrapping.WrapModeS, wrapping.WrapModeT);
+        this.UpdatePixels(TextureDimension.Two, width, height, 1, pixelFormat, pixelType, pixels, level, xOffset, yOffset);
     }
-    public void Update<T>(int width, int height, PixelFormat pixelFormat, PixelType pixelType, List<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0) where T : unmanaged
+
+    public void Update<T>(int width, int height, PixelFormat pixelFormat, PixelType pixelType, Span<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0)
+        where T : unmanaged
     {
-        base.UpdatePixels(TextureDimension.Two, width, height, 1, pixelFormat, pixelType, pixels, level, xOffset, yOffset);
+        this.UpdatePixels(TextureDimension.Two, width, height, 1, pixelFormat, pixelType, pixels, level, xOffset, yOffset);
     }
-    public void Update<T>(int width, int height, PixelFormat pixelFormat, PixelType pixelType, Span<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0) where T : unmanaged
+
+    public void Update<T>(int width, int height, PixelFormat pixelFormat, PixelType pixelType, ReadOnlySpan<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0)
+        where T : unmanaged
     {
-        base.UpdatePixels(TextureDimension.Two, width, height, 1, pixelFormat, pixelType, pixels, level, xOffset, yOffset);
+        this.UpdatePixels(TextureDimension.Two, width, height, 1, pixelFormat, pixelType, pixels, level, xOffset, yOffset);
     }
-    public void Update<T>(int width, int height, PixelFormat pixelFormat, PixelType pixelType, T[] pixels, int level = 0, int xOffset = 0, int yOffset = 0) where T : unmanaged
+
+    public void Update<T>(int width, int height, PixelFormat pixelFormat, PixelType pixelType, T[] pixels, int level = 0, int xOffset = 0, int yOffset = 0)
+        where T : unmanaged
     {
-        base.UpdatePixels(TextureDimension.Two, width, height, 1, pixelFormat, pixelType, pixels, level, xOffset, yOffset);
+        this.UpdatePixels(TextureDimension.Two, width, height, 1, pixelFormat, pixelType, pixels, level, xOffset, yOffset);
     }
-    public unsafe void Update<T>(int width, int height, PixelFormat pixelFormat, PixelType pixelType, in T pixels, int level = 0, int xOffset = 0, int yOffset = 0) where T : unmanaged
+
+    public unsafe void Update<T>(int width, int height, PixelFormat pixelFormat, PixelType pixelType, in T pixels, int level = 0, int xOffset = 0, int yOffset = 0)
+        where T : unmanaged
     {
-        base.UpdatePixels(TextureDimension.Two, width, height, 1, pixelFormat, pixelType, pixels, level, xOffset, yOffset);
+        this.UpdatePixels(TextureDimension.Two, width, height, 1, pixelFormat, pixelType, pixels, level, xOffset, yOffset);
     }
+
     public void Update(int width, int height, PixelFormat pixelFormat, PixelType pixelType, nint pixels, int level = 0, int xOffset = 0, int yOffset = 0)
     {
-        base.UpdatePixels(TextureDimension.Two, width, height, 1, pixelFormat, pixelType, pixels, level, xOffset, yOffset);
+        this.UpdatePixels(TextureDimension.Two, width, height, 1, pixelFormat, pixelType, pixels, level, xOffset, yOffset);
     }
-    public bool CopyGPU<TTexture>(TTexture dstTexture,
+
+    public bool CopyGPU<TTexture>(
+        TTexture dstTexture,
         int width, int height,
         int srcLevel, int srcX, int srcY,
-        int dstLevel, int dstX, int dstY, int dstZ) where TTexture : ITexture
+        int dstLevel, int dstX, int dstY, int dstZ)
+        where TTexture : ITexture
     {
-        return base.CopySubData(
-            dstTexture, 
-            width, height, 1, 
-            srcLevel, srcX, srcY, 0, 
+        return this.CopySubData(
+            dstTexture,
+            width, height, 1,
+            srcLevel, srcX, srcY, 0,
             dstLevel, dstX, dstY, dstZ);
     }
+
     public Texture2D CloneGPU()
     {
-        Texture2D dstTexture = new Texture2D(InternalFormat, Width, Height, Levels);
-        if(!HasAllocated)
-        {
-            throw new Exception($"Texture is empty");
-        }
+        Texture2D dstTexture = new Texture2D(this.InternalFormat, base.Width, base.Height, this.Levels);
 
-        base.CopyFilters(dstTexture);
-        base.CopyWrapModes(dstTexture);
-
-        for (int level = 0; level < Levels; level++)
+        for (int level = 0; level < this.Levels; level++)
         {
-            base.CopySubData(dstTexture,
-                Width, Height, 1,
+            this.CopySubData(
+                dstTexture,
+                base.Width, base.Height, 1,
                 level, 0, 0, 0,
                 level, 0, 0, 0);
         }

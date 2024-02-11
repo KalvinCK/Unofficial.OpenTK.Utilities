@@ -1,113 +1,124 @@
-﻿using OpenTK.Graphics.OpenGL4;
+﻿using System.Drawing;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Utilities.Textures;
-using System.Drawing;
 
 namespace OpenTK.Utilities.Rasterization;
 
 public class RasterFrameDepthCube : IDisposable
 {
-    private readonly DepthInternalFormat InternalFormat;
-    private readonly FrameBufferObject FrameBufferDepth;
-    private readonly TextureCubeMap TextureDepth;
-    private readonly SamplerObject SamplerObjectDepth;
-
-    public ITexture3D TextureCubemapDepth => TextureDepth;
-    public ISamplerObject SamplerDepth => SamplerObjectDepth;
-    public long TextureBindlessHandler => TextureDepth.BindlessHandler;
-    public long SamplerBindlessHandler => SamplerObjectDepth.BindlessHandler;
+    private readonly DepthInternalFormat internalFormat;
+    private readonly FrameBufferObject frameBufferDepth;
+    private readonly TextureCubeMap textureDepth;
+    private readonly SamplerObject samplerObjectDepth;
+    private Size size;
+    private TextureFiltering textureFiltering = TextureFiltering.Nearest;
+    private Texture3DWrapping textureWrapping = Texture3DWrapping.ClampToEdge;
+    private TextureFiltering samplerFiltering = TextureFiltering.Linear;
+    private Texture3DWrapping samplerWrapping = Texture3DWrapping.ClampToEdge;
 
     public RasterFrameDepthCube(Size initSize, DepthInternalFormat DepthInternalFormat)
     {
-        FrameBufferDepth = new FrameBufferObject();
-        TextureDepth = new TextureCubeMap();
+        this.frameBufferDepth = new FrameBufferObject();
+        this.textureDepth = new TextureCubeMap();
 
-        SamplerObjectDepth = new SamplerObject();
-        SamplerObjectDepth.SetWrapping3D(_SamplerWrapping);
-        SamplerObjectDepth.SetFiltering(_SamplerFiltering);
-        SamplerObjectDepth.SetSamplerIntParameter(SamplerParameterName.TextureCompareMode, TextureCompareMode.CompareRefToTexture);
-        SamplerObjectDepth.SetSamplerIntParameter(SamplerParameterName.TextureCompareFunc, All.Less);
+        this.samplerObjectDepth = new SamplerObject();
+        this.samplerObjectDepth.SetWrapping3D(this.samplerWrapping);
+        this.samplerObjectDepth.SetFiltering(this.samplerFiltering);
+        this.samplerObjectDepth.SetSamplerIntParameter(SamplerParameterName.TextureCompareMode, TextureCompareMode.CompareRefToTexture);
+        this.samplerObjectDepth.SetSamplerIntParameter(SamplerParameterName.TextureCompareFunc, All.Less);
 
-        InternalFormat = DepthInternalFormat;
-        Size = initSize;
+        this.internalFormat = DepthInternalFormat;
+        this.Size = initSize;
     }
-    private Size _Size;
+
+    public ITexture3D TextureCubemapDepth => this.textureDepth;
+
+    public ISamplerObject SamplerDepth => this.samplerObjectDepth;
+
+    public long TextureBindlessHandler => this.textureDepth.BindlessHandler;
+
+    public long SamplerBindlessHandler => this.samplerObjectDepth.BindlessHandler;
+
     public Size Size
     {
-        get => _Size;
+        get => this.size;
         set
         {
-            _Size = new Size(Math.Max(value.Width, 1), Math.Max(value.Height, 1));
+            this.size = new Size(Math.Max(value.Width, 1), Math.Max(value.Height, 1));
 
-            TextureDepth.ToAllocate((SizedInternalFormat)InternalFormat, _Size.Width, _Size.Height);
-            TextureDepth.SetFiltering(_TextureFiltering);
-            TextureDepth.SetWrapping(_TextureWrapping);
-            SamplerObjectDepth.AttachTexture(TextureDepth);
+            this.textureDepth.ToAllocate((SizedInternalFormat)this.internalFormat, this.size.Width, this.size.Height);
+            this.textureDepth.Filtering = this.textureFiltering;
+            this.textureDepth.Wrapping = this.textureWrapping;
+            this.samplerObjectDepth.AttachTexture(this.textureDepth);
 
-            FrameBufferDepth.SetTexture(FramebufferAttachment.DepthAttachment, TextureDepth);
-            FrameBufferDepth.ClearBuffer(ClearBuffer.Depth, 0, 1.0f);
+            this.frameBufferDepth.SetTexture(FramebufferAttachment.DepthAttachment, this.textureDepth);
+            this.frameBufferDepth.ClearBuffer(ClearBuffer.Depth, 0, 1.0f);
         }
     }
-    private TextureFiltering _TextureFiltering = TextureFiltering.Nearest;
+
     public TextureFiltering TextureFiltering
     {
-        get => _TextureFiltering;
+        get => this.textureFiltering;
         set
         {
-            _TextureFiltering = value;
-            TextureDepth.SetFiltering(_TextureFiltering);
-        }
-    }
-    private Texture3DWrapping _TextureWrapping = Texture3DWrapping.ClampToEdge;
-    public Texture3DWrapping TextureWrapping
-    {
-        get => _TextureWrapping;
-        set
-        {
-            _TextureWrapping = value;
-            TextureDepth.SetWrapping(_TextureWrapping);
+            this.textureFiltering = value;
+            this.textureDepth.Filtering = this.textureFiltering;
         }
     }
 
-    private TextureFiltering _SamplerFiltering = TextureFiltering.Linear;
+    public Texture3DWrapping TextureWrapping
+    {
+        get => this.textureWrapping;
+        set
+        {
+            this.textureWrapping = value;
+            this.textureDepth.Wrapping = this.textureWrapping;
+        }
+    }
+
     public TextureFiltering SamplerFiltering
     {
-        get => _SamplerFiltering;
+        get => this.samplerFiltering;
         set
         {
-            _SamplerFiltering = value;
-            SamplerObjectDepth.SetFiltering(_SamplerFiltering);
+            this.samplerFiltering = value;
+            this.samplerObjectDepth.SetFiltering(this.samplerFiltering);
         }
     }
-    private Texture3DWrapping _SamplerWrapping = Texture3DWrapping.ClampToEdge;
+
     public Texture3DWrapping SampleWrapping
     {
-        get => _SamplerWrapping;
+        get => this.samplerWrapping;
         set
         {
-            _SamplerWrapping = value;
-            SamplerObjectDepth.SetWrapping3D(_SamplerWrapping);
+            this.samplerWrapping = value;
+            this.samplerObjectDepth.SetWrapping3D(this.samplerWrapping);
         }
     }
+
     public void BindToDrawing()
     {
-        FrameBufferDepth.Bind();
+        this.frameBufferDepth.Bind();
     }
+
     public void BindToDrawingAndClear(ClearBufferMask ClearBufferMask)
     {
-        FrameBufferDepth.BindAndClear(ClearBufferMask);
+        this.frameBufferDepth.BindAndClear(ClearBufferMask);
     }
+
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
-            FrameBufferDepth.Dispose();
-            TextureDepth.Dispose();
-            SamplerObjectDepth.Dispose();
+            this.frameBufferDepth.Dispose();
+            this.textureDepth.Dispose();
+            this.samplerObjectDepth.Dispose();
         }
     }
 }

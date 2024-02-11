@@ -1,9 +1,8 @@
-﻿
-namespace OpenTK.Utilities.Textures;
+﻿namespace OpenTK.Utilities.Textures;
 
-public enum TextureDimension : int 
-{ 
-    One, 
-    Two, 
-    Three 
+public enum TextureDimension : int
+{
+    One,
+    Two,
+    Three,
 }

@@ -4,64 +4,73 @@ namespace OpenTK.Utilities;
 
 public class VertexArrayObject : IVertexArrayObject, IDisposable
 {
-    public int BufferID { get; private set; }
     public VertexArrayObject()
     {
-        GL.CreateVertexArrays(1, out int buffer);
-        BufferID = buffer;
+        this.BufferID = IVertexArrayObject.CreateBuffer();
     }
+
+    public int BufferID { get; private set; }
+
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     public virtual void Dispose(bool disposing)
     {
-        if(disposing)
+        if (disposing)
         {
-            GL.DeleteVertexArray(BufferID);
-            BufferID = 0;
+            GL.DeleteVertexArray(this.BufferID);
+            this.BufferID = 0;
         }
     }
+
     public void Bind()
     {
-        GL.BindVertexArray(BufferID);
-        IVertexArrayObject.BufferBindedInContext = BufferID;
+        GL.BindVertexArray(this.BufferID);
+        IVertexArrayObject.BufferBindedInContext = this.BufferID;
     }
-    
-    public void SetElementBuffer<TBuffer>(TBuffer BufferObject) where TBuffer : IBuffer
+
+    public void SetElementBuffer<TBuffer>(TBuffer BufferObject)
+        where TBuffer : IBuffer
     {
-        GL.VertexArrayElementBuffer(BufferID, BufferObject.BufferID);
+        GL.VertexArrayElementBuffer(this.BufferID, BufferObject.BufferID);
     }
-    public void AddVertexBuffer<TBuffer>(int BindingIndex, TBuffer BufferObject, int BufferOffset = 0) where TBuffer : IBufferObject
+
+    public void AddVertexBuffer<TBuffer>(int BindingIndex, TBuffer BufferObject, int BufferOffset = 0)
+        where TBuffer : IBufferObject
     {
-        GL.VertexArrayVertexBuffer(BufferID, BindingIndex, BufferObject.BufferID, BufferOffset, BufferObject.Stride);
+        GL.VertexArrayVertexBuffer(this.BufferID, BindingIndex, BufferObject.BufferID, BufferOffset, BufferObject.Stride);
     }
-    public void AddVertexBuffer<TBuffer>(int BindingIndex, TBuffer BufferObject, int VertexStride, int BufferOffset = 0) where TBuffer : IBuffer
+
+    public void AddVertexBuffer<TBuffer>(int BindingIndex, TBuffer BufferObject, int VertexStride, int BufferOffset = 0)
+        where TBuffer : IBuffer
     {
-        GL.VertexArrayVertexBuffer(BufferID, BindingIndex, BufferObject.BufferID, BufferOffset, VertexStride);
+        GL.VertexArrayVertexBuffer(this.BufferID, BindingIndex, BufferObject.BufferID, BufferOffset, VertexStride);
     }
+
     public void SetAttribFormat(int BindingIndex, int AttribIndex, int Count, VertexAttribType VertexAttribType, int RelativeOffset, bool Normalize = false)
     {
-        GL.EnableVertexArrayAttrib(BufferID, AttribIndex);
-        GL.VertexArrayAttribFormat(BufferID, AttribIndex, Count, VertexAttribType, Normalize, RelativeOffset);
-        GL.VertexArrayAttribBinding(BufferID, AttribIndex, BindingIndex);
+        GL.EnableVertexArrayAttrib(this.BufferID, AttribIndex);
+        GL.VertexArrayAttribFormat(this.BufferID, AttribIndex, Count, VertexAttribType, Normalize, RelativeOffset);
+        GL.VertexArrayAttribBinding(this.BufferID, AttribIndex, BindingIndex);
     }
-    public void SetAttribFormatI(int bindingIndex, int attribIndex, int attribTypeElements, VertexAttribType vertexAttribType, int relativeOffset)
+
+    public void SetAttribFormatI(int bindingIndex, int attribIndex, int attribTypeElements, VertexAttribType VertexAttribType, int relativeOffset)
     {
-        GL.EnableVertexArrayAttrib(BufferID, attribIndex);
-        GL.VertexArrayAttribIFormat(BufferID, attribIndex, attribTypeElements, vertexAttribType, relativeOffset);
-        GL.VertexArrayAttribBinding(BufferID, attribIndex, bindingIndex);
+        GL.EnableVertexArrayAttrib(this.BufferID, attribIndex);
+        GL.VertexArrayAttribIFormat(this.BufferID, attribIndex, attribTypeElements, VertexAttribType, relativeOffset);
+        GL.VertexArrayAttribBinding(this.BufferID, attribIndex, bindingIndex);
     }
+
     public void SetPerBufferDivisor(int bindingIndex, int divisor)
     {
-        GL.VertexArrayBindingDivisor(BufferID, bindingIndex, divisor);
+        GL.VertexArrayBindingDivisor(this.BufferID, bindingIndex, divisor);
     }
+
     public void DisableVertexAttribute(int attribIndex)
     {
-        GL.DisableVertexArrayAttrib(BufferID, attribIndex);
+        GL.DisableVertexArrayAttrib(this.BufferID, attribIndex);
     }
-
-    public static IVertexArrayObject Empty => IVertexArrayObject.Empty;
 }
-

@@ -1,5 +1,4 @@
-﻿
-namespace OpenTK.Utilities.Textures;
+﻿namespace OpenTK.Utilities.Textures;
 
 public enum CubeMapLayer : int
 {
@@ -8,5 +7,5 @@ public enum CubeMapLayer : int
     PositiveY,
     NegativeY,
     PositiveZ,
-    NegativeZ
+    NegativeZ,
 }

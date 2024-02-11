@@ -4,118 +4,133 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities;
 
-public class BufferCollection<T>() :
-    IBufferObject, IDisposable where T : struct
+public class BufferCollection<T>()
+    : IBufferObject, IDisposable
+    where T : struct
 {
-    // Used to control the buffer structure
-    private readonly List<T> CollectionInternal = [];
+    private readonly List<T> collectionInternal = [];
 
-    public List<T> CollectionData { get { return CollectionInternal; } }
+    public IReadOnlyList<T> CollectionData
+        => this.collectionInternal;
+
     public BufferUsageHint UsageHint { get; } = BufferUsageHint.DynamicDraw;
+
     public int BufferID { get; } = IBufferObject.CreateBuffer();
+
     public int Stride { get; } = Unsafe.SizeOf<T>();
-    public int Count => CollectionInternal.Count;
-    public int MemorySize => Count * Stride;
-    private void UpdateCollectionBuffer()
-    {
-        if(Count > 0)
-        {
-            var span = CollectionsMarshal.AsSpan(CollectionInternal);
-            GL.NamedBufferData(BufferID, MemorySize, ref span[0], UsageHint);
-        }
-    }
+
+    public int Count => this.collectionInternal.Count;
+
+    public int MemorySize => this.Count * this.Stride;
+
     public virtual T this[int index]
     {
-        get => CollectionInternal[index];
+        get => this.collectionInternal[index];
         set
         {
             T item = value;
-            CollectionInternal[index] = item;
-            GL.NamedBufferSubData(BufferID, index * Stride, Stride, ref item);
+            this.collectionInternal[index] = item;
+            GL.NamedBufferSubData(this.BufferID, index * this.Stride, this.Stride, ref item);
         }
     }
+
     public int RemoveAll(Predicate<T> match)
     {
-        int result = CollectionInternal.RemoveAll(match);
-        if(result != 0)
+        int result = this.collectionInternal.RemoveAll(match);
+        if (result != 0)
         {
-            UpdateCollectionBuffer();
+            this.UpdateCollectionBuffer();
         }
 
         return result;
     }
+
     public bool Contains(T item)
     {
-        return CollectionInternal.Contains(item);
+        return this.collectionInternal.Contains(item);
     }
+
     public int IndexOf(T item)
     {
-        return CollectionInternal.IndexOf(item);
+        return this.collectionInternal.IndexOf(item);
     }
+
     public IEnumerable<T> GetEnumrable()
     {
-        return CollectionInternal;
+        return this.collectionInternal;
     }
 
     public virtual void Add(T item)
     {
-        CollectionInternal.Add(item);
-        UpdateCollectionBuffer();
+        this.collectionInternal.Add(item);
+        this.UpdateCollectionBuffer();
     }
 
     public virtual void Clear()
     {
-        CollectionInternal.Clear();
-        GL.NamedBufferSubData(BufferID, 0, MemorySize, IntPtr.Zero);
+        this.collectionInternal.Clear();
+        GL.NamedBufferSubData(this.BufferID, 0, this.MemorySize, IntPtr.Zero);
     }
-    
+
     public virtual void RemoveAt(int index)
     {
-        CollectionInternal.RemoveAt(index);
-        UpdateCollectionBuffer();
+        this.collectionInternal.RemoveAt(index);
+        this.UpdateCollectionBuffer();
     }
 
     public virtual bool Remove(T item)
     {
-        var result = CollectionInternal.Remove(item);
-        if(result)
+        var result = this.collectionInternal.Remove(item);
+        if (result)
         {
-            UpdateCollectionBuffer();
+            this.UpdateCollectionBuffer();
         }
 
         return result;
     }
+
     public virtual void Insert(int index, T item)
     {
-        CollectionInternal.Insert(index, item);
-        UpdateCollectionBuffer();
-
+        this.collectionInternal.Insert(index, item);
+        this.UpdateCollectionBuffer();
     }
+
     public void Bind(BufferTarget BufferTarget)
     {
-        GL.BindBuffer(BufferTarget, BufferID);
+        GL.BindBuffer(BufferTarget, this.BufferID);
     }
-    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int BindingIndex)
+
+    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int bindingIndex)
     {
-        GL.BindBufferBase(BufferRangeTarget, BindingIndex, BufferID);
+        GL.BindBufferBase(BufferRangeTarget, bindingIndex, this.BufferID);
     }
+
     public override string ToString()
     {
-        return $"Stride: [{Stride}] Count of elements: [{Count}] Total capacity in bytes: [{MemorySize}]\n";
+        return $"this.Stride: [{this.Stride}] Count of elements: [{this.Count}] Total capacity in bytes: [{this.MemorySize}]\n";
     }
+
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
-            GL.DeleteBuffer(BufferID);
-            CollectionInternal.Clear();
+            GL.DeleteBuffer(this.BufferID);
+            this.collectionInternal.Clear();
+        }
+    }
+
+    private void UpdateCollectionBuffer()
+    {
+        if (this.Count > 0)
+        {
+            var span = CollectionsMarshal.AsSpan(this.collectionInternal);
+            GL.NamedBufferData(this.BufferID, this.MemorySize, ref span[0], this.UsageHint);
         }
     }
 }
-
-

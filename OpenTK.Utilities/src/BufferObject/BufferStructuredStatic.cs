@@ -4,160 +4,183 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities;
 
-public class BufferStructuredStatic<T>(BufferStorageFlags BufferStorageFlags = BufferStorageFlags.DynamicStorageBit) : 
-    IBufferObject, IDisposable  where T : struct
+public class BufferStructuredStatic<T>(BufferStorageFlags BufferStorageFlags = BufferStorageFlags.DynamicStorageBit) : IBufferObject, IDisposable
+    where T : struct
 {
-    public int Stride { get; } = Unsafe.SizeOf<T>();
-    public string DebugName { get; set; } = IBufferObject.Unnamed;
-    public BufferStorageFlags StorageFlags { get; private set; } = BufferStorageFlags;
-    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
-    public int Count { get; protected set; }
-    public int MemorySize => Count * Stride;
-
-    #region Init
-    public BufferStructuredStatic(int initialCount, BufferStorageFlags BufferStorageFlags = BufferStorageFlags.DynamicStorageBit) 
-        : this(BufferStorageFlags) 
+    public BufferStructuredStatic(int initialCount, BufferStorageFlags BufferStorageFlags = BufferStorageFlags.DynamicStorageBit)
+       : this(BufferStorageFlags)
     {
-        ToAllocate(initialCount);
+        this.ToAllocate(initialCount);
     }
+
     public BufferStructuredStatic(T[] initStructuredCollection, BufferStorageFlags BufferStorageFlags = BufferStorageFlags.DynamicStorageBit)
         : this(BufferStorageFlags)
     {
-        ToAllocate(initStructuredCollection);
+        this.ToAllocate(initStructuredCollection);
     }
+
     public BufferStructuredStatic(Span<T> initStructuredCollection, BufferStorageFlags BufferStorageFlags = BufferStorageFlags.DynamicStorageBit)
         : this(BufferStorageFlags)
     {
-        ToAllocate(initStructuredCollection);
+        this.ToAllocate(initStructuredCollection);
     }
+
     public BufferStructuredStatic(ReadOnlySpan<T> initStructuredCollection, BufferStorageFlags BufferStorageFlags = BufferStorageFlags.DynamicStorageBit)
-        : this(BufferStorageFlags) 
+        : this(BufferStorageFlags)
     {
-        ToAllocate(initStructuredCollection);
+        this.ToAllocate(initStructuredCollection);
     }
+
     public BufferStructuredStatic(List<T> initStructuredCollection, BufferStorageFlags BufferStorageFlags = BufferStorageFlags.DynamicStorageBit)
-        : this(BufferStorageFlags) 
+        : this(BufferStorageFlags)
     {
-        ToAllocate(initStructuredCollection);
+        this.ToAllocate(initStructuredCollection);
     }
+
     public BufferStructuredStatic(IReadOnlyList<T> initStructuredCollection, BufferStorageFlags BufferStorageFlags = BufferStorageFlags.DynamicStorageBit)
-        : this(BufferStorageFlags) 
+        : this(BufferStorageFlags)
     {
-        ToAllocate(initStructuredCollection);
+        this.ToAllocate(initStructuredCollection);
     }
-    #endregion
+
+    public int Stride { get; } = Unsafe.SizeOf<T>();
+
+    public BufferStorageFlags StorageFlags { get; private set; } = BufferStorageFlags;
+
+    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
+
+    public int Count { get; protected set; }
+
+    public int MemorySize => this.Count * this.Stride;
 
     #region Allocate
     public void ToAllocate(int count)
     {
-        Count = count;
-        GL.NamedBufferStorage(BufferID, MemorySize, IntPtr.Zero, StorageFlags);
+        this.Count = count;
+        GL.NamedBufferStorage(this.BufferID, this.MemorySize, IntPtr.Zero, this.StorageFlags);
     }
+
     public void ToAllocate(T[] structuredCollection)
     {
-        Count = structuredCollection.Length;
-        GL.NamedBufferStorage(BufferID, MemorySize, ref structuredCollection[0], StorageFlags);
+        this.Count = structuredCollection.Length;
+        GL.NamedBufferStorage(this.BufferID, this.MemorySize, ref structuredCollection[0], this.StorageFlags);
     }
+
     public void ToAllocate(Span<T> structuredCollection)
     {
-        Count = structuredCollection.Length;
-        GL.NamedBufferStorage(BufferID, MemorySize, ref structuredCollection[0], StorageFlags);
+        this.Count = structuredCollection.Length;
+        GL.NamedBufferStorage(this.BufferID, this.MemorySize, ref structuredCollection[0], this.StorageFlags);
     }
+
     public unsafe void ToAllocate(ReadOnlySpan<T> structuredCollection)
     {
-        Count = structuredCollection.Length;
+        this.Count = structuredCollection.Length;
 
         fixed (T* ptr = structuredCollection)
         {
-            GL.NamedBufferStorage(BufferID, MemorySize, (IntPtr)ptr, StorageFlags);
+            GL.NamedBufferStorage(this.BufferID, this.MemorySize, (IntPtr)ptr, this.StorageFlags);
         }
     }
+
     public void ToAllocate(List<T> structuredCollection)
     {
-        ToAllocate(CollectionsMarshal.AsSpan(structuredCollection));
+        this.ToAllocate(CollectionsMarshal.AsSpan(structuredCollection));
     }
+
     public void ToAllocate(IReadOnlyList<T> structuredCollection)
     {
-        ToAllocate((List<T>)structuredCollection);
+        this.ToAllocate((List<T>)structuredCollection);
     }
     #endregion
 
     #region Update
     public void Update(int indexStructure, T structuredCollection)
     {
-        GL.NamedBufferSubData(BufferID, indexStructure * Stride, Stride, ref structuredCollection);
+        GL.NamedBufferSubData(this.BufferID, indexStructure * this.Stride, this.Stride, ref structuredCollection);
     }
+
     public void Update(T[] structuredCollection)
     {
-        GL.NamedBufferSubData(BufferID, 0, MemorySize, ref structuredCollection[0]);
+        GL.NamedBufferSubData(this.BufferID, 0, this.MemorySize, ref structuredCollection[0]);
     }
+
     public void Update(Span<T> structuredCollection)
     {
-        GL.NamedBufferSubData(BufferID, 0, MemorySize, ref structuredCollection[0]);
+        GL.NamedBufferSubData(this.BufferID, 0, this.MemorySize, ref structuredCollection[0]);
     }
+
     public unsafe void Update(ReadOnlySpan<T> structuredCollection)
     {
         fixed (T* ptr = structuredCollection)
         {
-            GL.NamedBufferSubData(BufferID, 0, MemorySize, (IntPtr)ptr);
+            GL.NamedBufferSubData(this.BufferID, 0, this.MemorySize, (IntPtr)ptr);
         }
     }
+
     public void Update(List<T> structuredCollection)
     {
-        Update(CollectionsMarshal.AsSpan(structuredCollection));
+        this.Update(CollectionsMarshal.AsSpan(structuredCollection));
     }
+
     public void Update(IReadOnlyList<T> structuredCollection)
     {
-        Update(CollectionsMarshal.AsSpan((List<T>)structuredCollection));
+        this.Update(CollectionsMarshal.AsSpan((List<T>)structuredCollection));
     }
     #endregion
 
     public void Clear()
     {
-        GL.NamedBufferSubData(BufferID, 0, MemorySize, IntPtr.Zero);
-    }
-    public void Clear(int indexStructure)
-    {
-        GL.NamedBufferSubData(BufferID, indexStructure * Stride, Stride, IntPtr.Zero);
+        GL.NamedBufferSubData(this.BufferID, 0, this.MemorySize, IntPtr.Zero);
     }
 
-    public void Copy<TBuffer>(TBuffer writeBuffer, int readIndex, int writeIndex, int endIndex) where TBuffer : IBufferObject
+    public void Clear(int indexStructure)
     {
-        GL.CopyNamedBufferSubData(BufferID, writeBuffer.BufferID, readIndex * Stride, writeIndex * Stride, endIndex * Stride);
+        GL.NamedBufferSubData(this.BufferID, indexStructure * this.Stride, this.Stride, IntPtr.Zero);
     }
+
+    public void Copy<TBuffer>(TBuffer writeBuffer, int readIndex, int writeIndex, int endIndex)
+        where TBuffer : IBufferObject
+    {
+        GL.CopyNamedBufferSubData(this.BufferID, writeBuffer.BufferID, readIndex * this.Stride, writeIndex * this.Stride, endIndex * this.Stride);
+    }
+
     public BufferStructuredStatic<T> Clone()
     {
-        var newBuffer = new BufferStructuredStatic<T>(StorageFlags);
-        Copy(newBuffer, 0, 0, Count);
+        var newBuffer = new BufferStructuredStatic<T>(this.StorageFlags);
+        this.Copy(newBuffer, 0, 0, this.Count);
 
         return newBuffer;
     }
+
     public void Bind(BufferTarget BufferTarget)
     {
-        GL.BindBuffer(BufferTarget, BufferID);
+        GL.BindBuffer(BufferTarget, this.BufferID);
     }
-    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int BindingIndex)
+
+    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int bindingIndex)
     {
-        GL.BindBufferBase(BufferRangeTarget, BindingIndex, BufferID);
+        GL.BindBufferBase(BufferRangeTarget, bindingIndex, this.BufferID);
     }
+
     public override string ToString()
     {
-        return $"Stride: [{Stride}] Count of elements: [{Count}] Total capacity in bytes: [{MemorySize}]\n";
+        return $"Stride: [{this.Stride}] Count of elements: [{this.Count}] Total capacity in bytes: [{this.MemorySize}]\n";
     }
+
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
     }
-    protected virtual void Dispose(bool disposing)     
+
+    protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
-            GL.DeleteBuffer(BufferID);
-            BufferID = 0;
-            Count = 0;
-            DebugName = IBufferObject.Unnamed;
-            StorageFlags = BufferStorageFlags.None;
+            GL.DeleteBuffer(this.BufferID);
+            this.BufferID = 0;
+            this.Count = 0;
+            this.StorageFlags = BufferStorageFlags.None;
         }
     }
 }

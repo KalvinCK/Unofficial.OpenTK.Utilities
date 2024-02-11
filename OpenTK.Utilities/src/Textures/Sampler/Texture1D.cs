@@ -4,78 +4,88 @@ namespace OpenTK.Utilities.Textures;
 
 public class Texture1D() : TexturesImplements(TextureTarget1d.Texture1D), ITexture1D
 {
-    public int Levels => base._Levels;
-    public int Width => base._Width;
-    public TextureMinFilter MinFilter => base._MinFilter;
-    public TextureMagFilter MagFilter => base._MagFilter;
-    public TextureWrapMode WrapModeS => base._WrapModeS;
-    public Texture1D(SizedInternalFormat SizedInternalFormat, int width, int height, int levels = 1) : this()
+    public Texture1D(SizedInternalFormat SizedInternalFormat, int width, int height, int levels = 1)
+        : this()
     {
-        base.NewAllocation(SizedInternalFormat, width, height, 1, levels);
-    }
-    public void ToAllocate(SizedInternalFormat SizedInternalFormat, int width, int height, int levels = 1)
-    {
-        base.NewAllocation(SizedInternalFormat, width, height, 1, levels);
-    }
-    public int GetSizeMipmap(int level = 0)
-    {
-        base.GetSizeMipmap(out int width, out _, out _, level);
-        return width;
-    }
-    public void GetSizeMipmap(out int width, int level = 0)
-    {
-        base.GetSizeMipmap(out width, out _, out _, level);
-    }
-    public void SetWrapping(TextureWrapMode wrapS)
-    {
-        base.SetWrapMode(wrapS);
-    }
-    public void Update<T>(int width, PixelFormat pixelFormat, PixelType pixelType, List<T> pixels, int level = 0, int xOffset = 0) where T : unmanaged
-    {
-        base.UpdatePixels(TextureDimension.One, width, 1, 1, pixelFormat, pixelType, pixels, level, xOffset);
-    }
-    public void Update<T>(int width, PixelFormat pixelFormat, PixelType pixelType, Span<T> pixels, int level = 0, int xOffset = 0) where T : unmanaged
-    {
-        base.UpdatePixels(TextureDimension.One, width, 1, 1, pixelFormat, pixelType, pixels, level, xOffset);
-    }
-    public void Update<T>(int width, PixelFormat pixelFormat, PixelType pixelType, T[] pixels, int level = 0, int xOffset = 0) where T : unmanaged
-    {
-        base.UpdatePixels(TextureDimension.One, width, 1, 1, pixelFormat, pixelType, pixels, level, xOffset);
-    }
-    public unsafe void Update<T>(int width, PixelFormat pixelFormat, PixelType pixelType, in T pixels, int level = 0, int xOffset = 0) where T : unmanaged
-    {
-        base.UpdatePixels(TextureDimension.One, width, 1, 1, pixelFormat, pixelType, pixels, level, xOffset);
-    }
-    public void Update(int width, PixelFormat pixelFormat, PixelType pixelType, IntPtr pixels, int level = 0, int xOffset = 0)
-    {
-        base.UpdatePixels(TextureDimension.One, width, 0, 0, pixelFormat, pixelType, pixels, level, xOffset);
+        this.ToAllocate(SizedInternalFormat, width, height, levels);
     }
 
-    public bool CopyGPU<TTexture>(TTexture dstTexture,
+    public new int Width => base.Width;
+
+    public new TextureWrapMode WrapModeS
+    {
+        get => this.WrapModeS;
+        set => this.SetWrapModeS(value);
+    }
+
+    public int GetSizeMipmap(int level = 0)
+    {
+        this.GetSizeMipmap(out int width, out _, out _, level);
+        return width;
+    }
+
+    public void GetSizeMipmap(out int width, int level = 0)
+    {
+        this.GetSizeMipmap(out width, out _, out _, level);
+    }
+
+    public void ToAllocate(SizedInternalFormat SizedInternalFormat, int width, int height, int levels = 1)
+    {
+        this.NewAllocation(SizedInternalFormat, width, height, 1, levels);
+    }
+
+    public void Update<T>(int width, PixelFormat PixelFormat, PixelType PixelType, List<T> pixels, int level = 0, int xOffset = 0)
+        where T : unmanaged
+    {
+        this.UpdatePixels(TextureDimension.One, width, 1, 1, PixelFormat, PixelType, pixels, level, xOffset);
+    }
+
+    public void Update<T>(int width, PixelFormat PixelFormat, PixelType PixelType, Span<T> pixels, int level = 0, int xOffset = 0)
+        where T : unmanaged
+    {
+        this.UpdatePixels(TextureDimension.One, width, 1, 1, PixelFormat, PixelType, pixels, level, xOffset);
+    }
+
+    public void Update<T>(int width, PixelFormat PixelFormat, PixelType PixelType, T[] pixels, int level = 0, int xOffset = 0)
+        where T : unmanaged
+    {
+        this.UpdatePixels(TextureDimension.One, width, 1, 1, PixelFormat, PixelType, pixels, level, xOffset);
+    }
+
+    public unsafe void Update<T>(int width, PixelFormat PixelFormat, PixelType PixelType, in T pixels, int level = 0, int xOffset = 0)
+        where T : unmanaged
+    {
+        this.UpdatePixels(TextureDimension.One, width, 1, 1, PixelFormat, PixelType, pixels, level, xOffset);
+    }
+
+    public void Update(int width, PixelFormat PixelFormat, PixelType PixelType, IntPtr pixels, int level = 0, int xOffset = 0)
+    {
+        this.UpdatePixels(TextureDimension.One, width, 0, 0, PixelFormat, PixelType, pixels, level, xOffset);
+    }
+
+    public bool CopyGPU<TTexture>(
+        TTexture dstTexture,
         int width,
         int srcLevel, int srcX,
-        int dstLevel, int dstX, int dstY, int dstZ) where TTexture : ITexture
+        int dstLevel, int dstX, int dstY, int dstZ)
+        where TTexture : ITexture
     {
-        return base.CopySubData(dstTexture,
+        return this.CopySubData(
+            dstTexture,
             width, 1, 1,
             srcLevel, srcX, 0, 0,
             dstLevel, dstX, dstY, dstZ);
     }
 
-    public Texture1D CloneGPU(bool clone_Wrap_Filters = true)
+    public Texture1D CloneGPU()
     {
-        Texture1D dstTexture = new Texture1D(_InternalFormat, _Width, _Levels);
+        Texture1D dstTexture = new Texture1D(this.InternalFormat, base.Width, this.Levels);
 
-        if (clone_Wrap_Filters)
+        for (int level = 0; level < this.Levels; level++)
         {
-            base.CopyFilters(dstTexture);
-            base.CopyWrapModes(dstTexture);
-        }
-
-        for (int level = 0; level < _Levels; level++)
-        {
-            base.CopySubData(dstTexture,
-                Width, 1, 1,
+            this.CopySubData(
+                dstTexture,
+                base.Width, 1, 1,
                 level, 0, 0, 0,
                 level, 0, 0, 0);
         }
@@ -83,4 +93,3 @@ public class Texture1D() : TexturesImplements(TextureTarget1d.Texture1D), ITextu
         return dstTexture;
     }
 }
-

@@ -1,0 +1,30 @@
+﻿root=true
+
+[*.{cs,fsx}]
+indent_style=space
+indent_size=4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{sln,spec}]
+indent_style=tab
+indent_size=4
+
+[*.{xml,sh,cmd,yml,csproj}]
+indent_style=space
+indent_size=2
+
+[*.{cs,vb}]
+
+dotnet_diagnostic.CS8500.severity = none
+
+# style code disables
+dotnet_diagnostic.CS1591.severity = none
+dotnet_diagnostic.SA1600.severity = none
+dotnet_diagnostic.SA1010.severity = none
+dotnet_diagnostic.SA1633.severity = none
+dotnet_diagnostic.SA1313.severity = none
+dotnet_diagnostic.SA1124.severity = none # regions 
+dotnet_diagnostic.SA1009.severity = none # closing parenthesis
+dotnet_diagnostic.SA1602.severity = none # enumeration itens doc
+dotnet_diagnostic.SA1117.severity = none # parameters line

@@ -1,7 +1,7 @@
-﻿using OpenTK.Graphics.OpenGL4;
+﻿using System.Diagnostics;
+using OpenTK.Graphics.OpenGL4;
 using StbImageSharp;
 using StbImageWriteSharp;
-using System.Diagnostics;
 using ColorComponents = StbImageSharp.ColorComponents;
 
 namespace OpenTK.Utilities.Textures;
@@ -31,6 +31,7 @@ public static class TextureManager
         Array.Clear(pixels);
         StbImageWrite.stbi_flip_vertically_on_write(0);
     }
+
     public static unsafe void SavePNG(Texture2D texture, string filePath, string fileName, bool flipVertically = true)
     {
         StbImageWrite.stbi_flip_vertically_on_write(flipVertically ? 1 : 0);
@@ -65,6 +66,7 @@ public static class TextureManager
 
         return new PixelData<byte>(imageResult.Width, imageResult.Height, imageResult.Data, (Channels)imageResult.SourceComp);
     }
+
     public static PixelData<float> LoadHdr(string imagePath, Channels channels = Channels.Default, bool flipVertically = true)
     {
         using var stream = File.OpenRead(imagePath);
@@ -84,6 +86,7 @@ public static class TextureManager
 
         pixel = new PixelData<byte>(imageResult.Width, imageResult.Height, imageResult.Data, (Channels)imageResult.SourceComp);
     }
+
     public static void LoadHdr(string imagePath, out PixelData<float> pixel, Channels channels = Channels.Default, bool flipVertically = true)
     {
         using var stream = File.OpenRead(imagePath);
@@ -102,8 +105,7 @@ public static class TextureManager
         int numLevels,
         bool srgbSpace = true,
         bool flipVertically = true,
-        Channels channels = Channels.Default
-        )
+        Channels channels = Channels.Default)
     {
         Load(imgFilePath, out var img, channels, flipVertically);
         var description = img.GetPixelDesc(srgbSpace ? DescType.SrgbSpace : DescType.Default);
@@ -111,16 +113,12 @@ public static class TextureManager
         var texture = new Texture2D(description.InternalFormat, img.Width, img.Height, numLevels);
         texture.Update(img.Width, img.Height, description.Format, description.Type, img.Data);
 
-        texture.SetWrapping(wraping.WrapModeS, wraping.WrapModeT);
-        texture.SetFiltering(filtering.MinFilter, filtering.MagFilter);
-
-        if (filtering.GenerateMimap && numLevels > 1)
-        {
-            texture.GenerateMipmap();
-        }
+        texture.Wrapping = wraping;
+        texture.Filtering = filtering;
 
         return texture;
     }
+
     public static Texture2D CreateTexHDRFromFile(
         string imgFilePath,
         TextureFiltering filtering,
@@ -128,22 +126,16 @@ public static class TextureManager
         int numLevels,
         bool useHalf,
         bool flipVertically = true,
-        Channels channels = Channels.Default
-        )
+        Channels channels = Channels.Default)
     {
         LoadHdr(imgFilePath, out var img, channels, flipVertically);
         var description = img.GetPixelDesc(useHalf ? DescType.HDR16 : DescType.HDR32);
 
         var texture = new Texture2D(description.InternalFormat, img.Width, img.Height, numLevels);
         texture.Update(img.Width, img.Height, description.Format, description.Type, img.Data);
-        
-        texture.SetWrapping(wraping.WrapModeS, wraping.WrapModeT);
-        texture.SetFiltering(filtering.MinFilter, filtering.MagFilter);
 
-        if (filtering.GenerateMimap && numLevels > 1)
-        {
-            texture.GenerateMipmap();
-        }
+        texture.Wrapping = wraping;
+        texture.Filtering = filtering;
 
         return texture;
     }
@@ -170,20 +162,20 @@ public static class TextureManager
             texture.Update(img.Width, img.Height, description.Format, description.Type, img.Data);
         }
 
-        texture.SetWrapping(TextureWrapMode.ClampToEdge, TextureWrapMode.ClampToEdge);
+        texture.Wrapping = Texture2DWrapping.ClampToEdge;
 
         if (numLevels > 1)
         {
-            texture.SetFiltering(TextureMinFilter.LinearMipmapLinear, TextureMagFilter.Linear);
-            texture.GenerateMipmap();
+            texture.Filtering = new TextureFiltering(true, TextureMinFilter.LinearMipmapLinear, TextureMagFilter.Linear);
         }
         else
         {
-            texture.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
+            texture.Filtering = new (false, TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
 
         return texture;
     }
+
     public static TextureRectangle CreateDefaulRectangleFromFile(string imgFilePath, bool srgbSpace = true, bool flipVertically = true)
     {
         TextureRectangle texture;
@@ -208,6 +200,7 @@ public static class TextureManager
 
         return texture;
     }
+
     public static TextureCubeMap CreateDefaulCubeMapFromFile(CubemapTexturesPath texturesPath, bool srgbSpace = true, int numLevels = 1, bool flipVertically = true)
     {
         Debug.Assert(texturesPath.Files.Length == 6, "Must be 6 images.");
@@ -226,17 +219,16 @@ public static class TextureManager
             texture.Update(img.Width, img.Height, CubeMapLayer.PositiveX + i, description.Format, PixelType.UnsignedByte, img.Data);
         }
 
-        texture.SetWrapping(TextureWrapMode.ClampToEdge, TextureWrapMode.ClampToEdge, TextureWrapMode.ClampToEdge);
         texture.EnableSeamlessCubemapARB_AMD(true);
+        texture.Wrapping = new Texture3DWrapping(TextureWrapMode.ClampToEdge, TextureWrapMode.ClampToEdge, TextureWrapMode.ClampToEdge);
 
         if (numLevels > 1)
         {
-            texture.SetFiltering(TextureMinFilter.LinearMipmapLinear, TextureMagFilter.Linear);
-            texture.GenerateMipmap();
+            texture.Filtering = new TextureFiltering(true, TextureMinFilter.LinearMipmapLinear, TextureMagFilter.Linear);
         }
         else
         {
-            texture.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
+            texture.Filtering = new TextureFiltering(false, TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
 
         return texture;

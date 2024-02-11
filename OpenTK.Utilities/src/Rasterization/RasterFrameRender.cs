@@ -1,98 +1,107 @@
-﻿using OpenTK.Graphics.OpenGL4;
+﻿using System.Drawing;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Utilities.Textures;
-using System.Drawing;
 
 namespace OpenTK.Utilities.Rasterization;
 
 public class RasterFrameRender : IDisposable
 {
-    private readonly FrameBufferObject FrameCapture;
-    private readonly RenderBufferObject RenderCapture;
-    private readonly Texture2D TextureCapture;
-    public ITexture2D FrameResult => TextureCapture;
+    private readonly FrameBufferObject frameCapture;
+    private readonly RenderBufferObject renderCapture;
+    private readonly Texture2D textureCapture;
+    private SizedInternalFormat internalFormat;
+    private Size size;
+    private TextureFiltering textureFiltering = TextureFiltering.Nearest;
+    private Texture2DWrapping textureWrapping = Texture2DWrapping.ClampToEdge;
+
     public RasterFrameRender(Size initSize, SizedInternalFormat internalFormat = SizedInternalFormat.Rgba16f)
     {
-        FrameCapture = new FrameBufferObject();
-        RenderCapture = new RenderBufferObject();
-        TextureCapture = new Texture2D();
+        this.frameCapture = new FrameBufferObject();
+        this.renderCapture = new RenderBufferObject();
+        this.textureCapture = new Texture2D();
 
-        _InternalFormat = internalFormat;
-        Size = initSize;
+        this.internalFormat = internalFormat;
+        this.Size = initSize;
     }
-    private SizedInternalFormat _InternalFormat;
+
+    public ITexture2D FrameResult => this.textureCapture;
+
     public SizedInternalFormat InternalFormat
     {
-        get => _InternalFormat;
+        get => this.internalFormat;
         set
         {
-            _InternalFormat = value;
+            this.internalFormat = value;
 
-            TextureCapture.ToAllocate(_InternalFormat, _Size.Width, _Size.Height);
-            TextureCapture.SetFiltering(_Filtering);
-            TextureCapture.SetWrapping(_Wrapping);
+            this.textureCapture.ToAllocate(this.internalFormat, this.size.Width, this.size.Height);
+            this.textureCapture.Filtering = this.textureFiltering;
+            this.textureCapture.Wrapping = this.textureWrapping;
 
-            FrameCapture.SetTexture(FramebufferAttachment.ColorAttachment0, TextureCapture);
+            this.frameCapture.SetTexture(FramebufferAttachment.ColorAttachment0, this.textureCapture);
         }
     }
 
-    private Size _Size;
     public Size Size
     {
-        get => _Size;
+        get => this.size;
         set
         {
-            _Size = new Size(Math.Max(value.Width, 1), Math.Max(value.Height, 1));
+            this.size = new Size(Math.Max(value.Width, 1), Math.Max(value.Height, 1));
 
-            RenderCapture.Storage(RenderbufferStorage.Depth24Stencil8, _Size.Width, _Size.Height);
+            this.renderCapture.Storage(RenderbufferStorage.Depth24Stencil8, this.size.Width, this.size.Height);
 
-            TextureCapture.ToAllocate(_InternalFormat, _Size.Width, _Size.Height);
-            TextureCapture.SetFiltering(_Filtering);
-            TextureCapture.SetWrapping(_Wrapping);
+            this.textureCapture.ToAllocate(this.internalFormat, this.size.Width, this.size.Height);
+            this.textureCapture.Filtering = this.textureFiltering;
+            this.textureCapture.Wrapping = this.textureWrapping;
 
-            FrameCapture.SetRenderBuffer(FramebufferAttachment.DepthStencilAttachment, RenderCapture);
-            FrameCapture.SetTexture(FramebufferAttachment.ColorAttachment0, TextureCapture);
+            this.frameCapture.SetRenderBuffer(FramebufferAttachment.DepthStencilAttachment, this.renderCapture);
+            this.frameCapture.SetTexture(FramebufferAttachment.ColorAttachment0, this.textureCapture);
         }
     }
-    private TextureFiltering _Filtering = TextureFiltering.Nearest;
+
     public TextureFiltering Filtering
     {
-        get => _Filtering;
+        get => this.textureFiltering;
         set
         {
-            _Filtering = value;
-            TextureCapture.SetFiltering(_Filtering);
+            this.textureFiltering = value;
+            this.textureCapture.Filtering = this.textureFiltering;
         }
     }
-    private Texture2DWrapping _Wrapping = Texture2DWrapping.ClampToEdge;
+
     public Texture2DWrapping Wrapping
     {
-        get => _Wrapping;
+        get => this.textureWrapping;
         set
         {
-            _Wrapping = value;
-            TextureCapture.SetWrapping(_Wrapping);
+            this.textureWrapping = value;
+            this.textureCapture.Wrapping = this.textureWrapping;
         }
     }
+
     public void BindToDrawing()
     {
-        FrameCapture.Bind();
+        this.frameCapture.Bind();
     }
+
     public void BindToDrawingAndClear(ClearBufferMask ClearBufferMask)
     {
-        FrameCapture.BindAndClear(ClearBufferMask);
+        this.frameCapture.BindAndClear(ClearBufferMask);
     }
+
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
-            FrameCapture.Dispose();
-            RenderCapture.Dispose();
-            TextureCapture.Dispose();
+            this.frameCapture.Dispose();
+            this.renderCapture.Dispose();
+            this.textureCapture.Dispose();
         }
     }
 }

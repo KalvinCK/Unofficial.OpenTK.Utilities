@@ -5,107 +5,130 @@ namespace OpenTK.Utilities;
 
 public class FrameBufferObject : IFrameBufferObject, IDisposable
 {
-    public int BufferID { get; private set; }
     public FrameBufferObject()
     {
-        GL.CreateFramebuffers(1, out int buffer);
-        BufferID = buffer;
+        this.BufferID = IFrameBufferObject.CreateBuffer();
     }
+
     internal FrameBufferObject(int buffer)
     {
-        BufferID = buffer;
+        this.BufferID = buffer;
     }
-    public void Bind(FramebufferTarget framebufferTarget = FramebufferTarget.Framebuffer)
+
+    public int BufferID { get; private set; }
+
+    public void Bind(FramebufferTarget FramebufferTarget = FramebufferTarget.Framebuffer)
     {
-        GL.BindFramebuffer(framebufferTarget, BufferID);
-        IFrameBufferObject.BufferBindedInContext = BufferID;
+        GL.BindFramebuffer(FramebufferTarget, this.BufferID);
+        IFrameBufferObject.BufferBindedInContext = this.BufferID;
     }
+
     public FramebufferStatus GetStatus()
     {
-        return GL.CheckNamedFramebufferStatus(BufferID, FramebufferTarget.Framebuffer);
+        return GL.CheckNamedFramebufferStatus(this.BufferID, FramebufferTarget.Framebuffer);
     }
+
     public void BindAndClear(ClearBufferMask ClearBufferMask, FramebufferTarget FramebufferTarget = FramebufferTarget.Framebuffer)
     {
-        Bind(FramebufferTarget);
-        Clear(ClearBufferMask);
+        this.Bind(FramebufferTarget);
+        this.Clear(ClearBufferMask);
     }
-    public void Dispose()
+
+    public void SetTexture<TTexture>(FramebufferAttachment FramebufferAttachment, TTexture texture, int level = 0)
+        where TTexture : ITexture
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+        GL.NamedFramebufferTexture(this.BufferID, FramebufferAttachment, texture.BufferID, level);
     }
-    protected virtual void Dispose(bool disposing)
+
+    public void SetTextureLayer<TTexture>(FramebufferAttachment FramebufferAttachment, TTexture Texture, int layer, int level = 0)
+        where TTexture : ITexture
     {
-        if(disposing)
-        {
-            GL.DeleteFramebuffer(BufferID);
-            BufferID = 0;
-        }
+        GL.NamedFramebufferTextureLayer(this.BufferID, FramebufferAttachment, Texture.BufferID, level, layer);
     }
-    public void SetTexture<TTexture>(FramebufferAttachment framebufferAttachment, TTexture Texture, int level = 0) where TTexture : ITexture
+
+    public void SetTextureCubeMap<TTexture>(FramebufferAttachment FramebufferAttachment, TTexture Texture, CubeMapLayer layer, int level = 0)
+        where TTexture : ITexture
     {
-        GL.NamedFramebufferTexture(BufferID, framebufferAttachment, Texture.BufferID, level);
+        GL.NamedFramebufferTextureLayer(this.BufferID, FramebufferAttachment, Texture.BufferID, level, (int)layer);
     }
-    public void SetTextureLayer<TTexture>(FramebufferAttachment framebufferAttachment, TTexture Texture, int layer, int level = 0) where TTexture : ITexture
-    {
-        GL.NamedFramebufferTextureLayer(BufferID, framebufferAttachment, Texture.BufferID, level, layer);
-    }
-    public void SetTextureCubeMap<TTexture>(FramebufferAttachment framebufferAttachment, TTexture Texture, CubeMapLayer layer, int level = 0) where TTexture : ITexture
-    {
-        GL.NamedFramebufferTextureLayer(BufferID, framebufferAttachment, Texture.BufferID, level, (int)layer);
-    }
+
     public void SetRenderBuffer(FramebufferAttachment attachment, RenderBufferObject renderBuffer)
     {
-        GL.NamedFramebufferRenderbuffer(BufferID, attachment, RenderbufferTarget.Renderbuffer, renderBuffer.BufferID);
+        GL.NamedFramebufferRenderbuffer(this.BufferID, attachment, RenderbufferTarget.Renderbuffer, renderBuffer.BufferID);
     }
-    public void SetParamater(FramebufferDefaultParameter framebufferDefaultParameter, int param)
+
+    public void SetParamater(FramebufferDefaultParameter FramebufferDefaultParameter, int param)
     {
-        GL.NamedFramebufferParameter(BufferID, framebufferDefaultParameter, param);
+        GL.NamedFramebufferParameter(this.BufferID, FramebufferDefaultParameter, param);
     }
+
     public void SetDrawBuffer(DrawBufferMode drawBufferMode)
     {
-        GL.NamedFramebufferDrawBuffer(BufferID, drawBufferMode);
+        GL.NamedFramebufferDrawBuffer(this.BufferID, drawBufferMode);
     }
+
     public unsafe void SetDrawBuffers(params DrawBuffersEnum[] drawBuffersEnums)
     {
         fixed (DrawBuffersEnum* ptr = drawBuffersEnums)
         {
-            GL.NamedFramebufferDrawBuffers(BufferID, drawBuffersEnums.Length, ptr);
+            GL.NamedFramebufferDrawBuffers(this.BufferID, drawBuffersEnums.Length, ptr);
         }
     }
+
     public void SetReadBuffer(ReadBufferMode readBufferMode)
     {
-        GL.NamedFramebufferReadBuffer(BufferID, readBufferMode);
+        GL.NamedFramebufferReadBuffer(this.BufferID, readBufferMode);
     }
+
     public void Blit(in FrameBufferObject drawFrameBuffer, int width, int height, BlitFramebufferFilter blitFramebufferFilter, ClearBufferMask bufferMask, int srcX = 0, int srcY = 0, int dstX = 0, int dstY = 0)
     {
-        GL.BlitNamedFramebuffer(BufferID, drawFrameBuffer.BufferID, srcX, srcY, width, height, dstX, dstY, width, height, bufferMask, blitFramebufferFilter);
+        GL.BlitNamedFramebuffer(this.BufferID, drawFrameBuffer.BufferID, srcX, srcY, width, height, dstX, dstY, width, height, bufferMask, blitFramebufferFilter);
     }
+
     public void ClearBuffer(ClearBuffer clearBuffer, int drawBuffer, float clearValue)
     {
-        GL.ClearNamedFramebuffer(BufferID, clearBuffer, drawBuffer, ref clearValue);
+        GL.ClearNamedFramebuffer(this.BufferID, clearBuffer, drawBuffer, ref clearValue);
     }
+
     public void ClearBuffer(ClearBuffer clearBuffer, int drawBuffer, uint clearValue)
     {
-        GL.ClearNamedFramebuffer((uint)BufferID, clearBuffer, drawBuffer, ref clearValue);
+        GL.ClearNamedFramebuffer((uint)this.BufferID, clearBuffer, drawBuffer, ref clearValue);
     }
+
     public void ClearBuffer(ClearBuffer clearBuffer, int drawBuffer, int clearValue)
     {
-        GL.ClearNamedFramebuffer(BufferID, clearBuffer, drawBuffer, ref clearValue);
+        GL.ClearNamedFramebuffer(this.BufferID, clearBuffer, drawBuffer, ref clearValue);
     }
+
     public void Clear(ClearBufferMask clearBufferMask)
     {
         GL.Clear(clearBufferMask);
     }
-    
+
     public void DrawTextureColor<TTexture2D>(
         TTexture2D drawTexture,
         BlitFramebufferFilter BlitFramebufferFilter = BlitFramebufferFilter.Nearest,
-        ClearBufferMask ClearBufferMask = ClearBufferMask.ColorBufferBit) where TTexture2D : ITexture2D
+        ClearBufferMask ClearBufferMask = ClearBufferMask.ColorBufferBit)
+        where TTexture2D : ITexture2D
     {
         using var drawFrame = new FrameBufferObject();
         drawFrame.SetTexture(FramebufferAttachment.ColorAttachment0, drawTexture);
 
-        Blit(drawFrame, drawTexture.Width, drawTexture.Height, BlitFramebufferFilter, ClearBufferMask);
+        this.Blit(drawFrame, drawTexture.Width, drawTexture.Height, BlitFramebufferFilter, ClearBufferMask);
+    }
+
+    public void Dispose()
+    {
+        this.Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            GL.DeleteFramebuffer(this.BufferID);
+            this.BufferID = 0;
+        }
     }
 }

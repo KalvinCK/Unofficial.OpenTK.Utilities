@@ -1,22 +1,26 @@
 ﻿using OpenTK.Graphics.OpenGL4;
-using System.Drawing;
+using OpenTK.Mathematics;
 
 namespace OpenTK.Utilities.Textures;
 
 public class Texture2DMultiSamplerArray() : TexturesMultiSamplerImplements(TextureTargetMultisample3d.Texture2DMultisampleArray)
 {
-    public int Width => base._Width; 
-    public int Height => base._Height;
-    public int Layers => base._Depth;
-    public int Samples => base._Samples;
-    public bool FixedSampleLocations => base._FixedSampleLocations;
-
-    public Texture2DMultiSamplerArray(SizedInternalFormat SizedInternalFormat, int width, int height, int layers, int samples = 4, bool fixedSampleLocations = true) : this()
+    public Texture2DMultiSamplerArray(SizedInternalFormat SizedInternalFormat, int width, int height, int layers, int samples = 4, bool fixedSampleLocations = true)
+        : this()
     {
-        base.AllocateTextures(SizedInternalFormat, width, height, layers, samples, fixedSampleLocations);
+        this.AllocateTextures(SizedInternalFormat, width, height, layers, samples, fixedSampleLocations);
     }
+
+    public new int Width => base.Width;
+
+    public new int Height => base.Height;
+
+    public int Layers => this.Depth;
+
+    public Vector3i Size => new Vector3i(base.Width, base.Height, this.Depth);
+
     public void ToAllocate(SizedInternalFormat SizedInternalFormat, int width, int height, int layers, int samples = 4, bool fixedSampleLocations = true)
     {
-        base.AllocateTextures(SizedInternalFormat, width, height, layers, samples, fixedSampleLocations);
+        this.AllocateTextures(SizedInternalFormat, width, height, layers, samples, fixedSampleLocations);
     }
 }

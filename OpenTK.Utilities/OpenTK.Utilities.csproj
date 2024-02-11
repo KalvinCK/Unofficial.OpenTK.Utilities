@@ -1,22 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-	<allowUnsafeBlocks>true</allowUnsafeBlocks>
-	<RootNamespace>OpenTK.Utilities</RootNamespace>
-	<Platforms>AnyCPU;x64</Platforms>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<allowUnsafeBlocks>true</allowUnsafeBlocks>
+		<RootNamespace>OpenTK.Utilities</RootNamespace>
+		<Platforms>AnyCPU;x64</Platforms>
+	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include=".editorconfig" Link=".editorconfig" />
+		<PackageReference Include="OpenTK.Graphics" Version="4.8.0" />
+		<PackageReference Include="StbImageSharp" Version="2.27.13" />
+		<PackageReference Include="StbImageWriteSharp" Version="1.16.7" />
 	</ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenTK.Graphics" Version="4.8.0" />
-    <PackageReference Include="StbImageSharp" Version="2.27.13" />
-    <PackageReference Include="StbImageWriteSharp" Version="1.16.7" />
+    <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
+  
+	<Import Project="..\props\common.props" />
+	<Import Project="..\props\stylecop.props" />
 
 </Project>

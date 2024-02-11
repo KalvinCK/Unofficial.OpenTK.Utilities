@@ -4,90 +4,104 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities;
 
-public class BufferFrame<T> :
-    IBufferObject, IDisposable where T : struct
+public class BufferFrame<T> : IBufferObject, IDisposable
+    where T : struct
 {
-    public BufferTarget Target { get; }
-    public BufferUsageHint UsageHint { get; } = BufferUsageHint.DynamicDraw;
-    public int BufferID { get; } = IBufferObject.CreateBuffer();
+    private readonly BufferUsageHint usageHint = BufferUsageHint.DynamicDraw;
+
+    private T[] memoryData = [];
+
+    public BufferFrame(int countMemoryElements)
+    {
+        this.SetCapacity(countMemoryElements);
+    }
+
     public int Stride { get; } = Unsafe.SizeOf<T>();
+
+    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
+
     public int Count { get; protected set; }
-    public int MemorySize => Count * Stride;
+
+    public int MemorySize => this.Count * this.Stride;
+
     public int CountCurrentFrame { get; private set; }
 
-    private T[] MemoryData = [];
-    private int EndIndex => MemoryData.Length - 1;
-    public T this[int index] => MemoryData[index];
-    public BufferFrame(BufferTarget BufferTarget, int countMemoryElements)
-    {
-        Target = BufferTarget;
-        SetCapacity(countMemoryElements);
-    }
+    private int EndIndex => this.memoryData.Length - 1;
+
+    public T this[int index] => this.memoryData[index];
+
     public void SetCapacity(int countMemoryElements)
     {
-        Count = countMemoryElements;
+        this.Count = countMemoryElements;
 
-        Array.Resize(ref MemoryData, countMemoryElements);
-        GL.NamedBufferData(BufferID, MemorySize, MemoryData, UsageHint);
+        Array.Resize(ref this.memoryData, countMemoryElements);
+        GL.NamedBufferData(this.BufferID, this.MemorySize, this.memoryData, this.usageHint);
     }
+
     public bool Include(T Data)
     {
-        if(CountCurrentFrame == EndIndex)
+        if (this.CountCurrentFrame == this.EndIndex)
         {
             return false;
         }
 
-        MemoryData[CountCurrentFrame] = Data;
-        GL.NamedBufferSubData(BufferID, CountCurrentFrame * Stride, Stride, ref Data);
+        this.memoryData[this.CountCurrentFrame] = Data;
+        GL.NamedBufferSubData(this.BufferID, this.CountCurrentFrame * this.Stride, this.Stride, ref Data);
 
-        CountCurrentFrame++;
+        this.CountCurrentFrame++;
 
         return true;
     }
+
     public void NewFrame()
     {
-        if(CountCurrentFrame == 0)
-            return;
-
-        if(CountCurrentFrame == EndIndex)
+        if (this.CountCurrentFrame == 0)
         {
-            SetCapacity((int)(Count * 1.5f));
+            return;
+        }
+
+        if (this.CountCurrentFrame == this.EndIndex)
+        {
+            this.SetCapacity((int)(this.Count * 1.5f));
             Debug.Print("The extended buffer size.");
         }
         else
         {
-            GL.NamedBufferSubData(BufferID, 0, MemorySize, IntPtr.Zero);
+            GL.NamedBufferSubData(this.BufferID, 0, this.MemorySize, IntPtr.Zero);
         }
 
-        Array.Clear(MemoryData);
-        CountCurrentFrame = 0;
+        Array.Clear(this.memoryData);
+        this.CountCurrentFrame = 0;
     }
+
     public void Bind(BufferTarget BufferTarget)
     {
-        GL.BindBuffer(BufferTarget, BufferID);
+        GL.BindBuffer(BufferTarget, this.BufferID);
     }
-    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int BindingIndex)
+
+    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int bindingIndex)
     {
-        GL.BindBufferBase(BufferRangeTarget, BindingIndex, BufferID);
+        GL.BindBufferBase(BufferRangeTarget, bindingIndex, this.BufferID);
     }
+
     public override string ToString()
     {
-        return $"Target: [{Target}] Stride: [{Stride}] Count of elements: [{Count}] Total capacity in bytes: [{MemorySize}] Count of elements in Frame: [{CountCurrentFrame}]\n";
+        return $"Stride: [{this.Stride}] Count of elements: [{this.Count}] Total capacity in bytes: [{this.MemorySize}] Count of elements in Frame: [{this.CountCurrentFrame}]\n";
     }
+
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
-            GL.DeleteBuffer(BufferID);
-            CountCurrentFrame = 0;
-            MemoryData = [];
+            GL.DeleteBuffer(this.BufferID);
+            this.CountCurrentFrame = 0;
+            this.memoryData = [];
         }
     }
 }
-
-

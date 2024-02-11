@@ -1,5 +1,4 @@
-﻿
-namespace OpenTK.Utilities.Textures;
+﻿namespace OpenTK.Utilities.Textures;
 
 public enum Channels
 {
@@ -7,5 +6,5 @@ public enum Channels
     Grey,
     GreyAlpha,
     RedGreenBlue,
-    RedGreenBlueAlpha
+    RedGreenBlueAlpha,
 }

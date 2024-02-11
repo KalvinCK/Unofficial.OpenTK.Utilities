@@ -4,83 +4,87 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities;
 
-public class BufferConstant<T> : 
-    IBufferObject, IDisposable where T : struct
+public class BufferConstant<T> : IBufferObject, IDisposable
+    where T : struct
 {
-    public BufferTarget Target { get; }
-    public int BufferID { get; } = IBufferObject.CreateBuffer();
-    public int Stride { get; } = Unsafe.SizeOf<T>();
-    public int Count { get; } = 1;
-    public int MemorySize => Count * Stride;
+    private T data;
 
-    public unsafe BufferConstant(BufferTarget bufferTarget)
+    public unsafe BufferConstant()
     {
-        Target = bufferTarget;
-        GL.NamedBufferStorage(BufferID, MemorySize, IntPtr.Zero, BufferStorageFlags.DynamicStorageBit);
-        _Data = new();
-    }
-    public unsafe BufferConstant(BufferTarget bufferTarget, T InitData)
-    {
-        Target = bufferTarget;
-        GL.NamedBufferStorage(BufferID, MemorySize, ref InitData, BufferStorageFlags.DynamicStorageBit);
-        _Data = InitData;
-    }
-    public void Bind(BufferTarget BufferTarget)
-    {
-        GL.BindBuffer(BufferTarget, BufferID);
-    }
-    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int BindingIndex)
-    {
-        GL.BindBufferBase(BufferRangeTarget, BindingIndex, BufferID);
-    }
-    private void UpdateRegion<TValue>(int offsetInBytes, int sizeInBytes, TValue Data) where TValue : struct
-    {
-        GL.NamedBufferSubData(BufferID, offsetInBytes, sizeInBytes, ref Data);
+        GL.NamedBufferStorage(this.BufferID, this.MemorySize, IntPtr.Zero, BufferStorageFlags.DynamicStorageBit);
+        this.data = new ();
     }
 
-    private T _Data;
+    public unsafe BufferConstant(T InitData)
+    {
+        GL.NamedBufferStorage(this.BufferID, this.MemorySize, ref InitData, BufferStorageFlags.DynamicStorageBit);
+        this.data = InitData;
+    }
+
     public T Data
     {
-        get => _Data;
+        get => this.data;
         set
         {
-            _Data = value;
-            UpdateRegion(0, MemorySize, Data);
+            this.data = value;
+            this.UpdateBufferData(0, this.MemorySize, this.data);
         }
     }
 
-    /// <summary>
-    /// UpdatePixels the property of: <typeparamref name="TValue"/>.
-    /// </summary>
-    /// <typeparam name="TValue">The type of property to update.</typeparam>
-    /// <param name="propName">The name of the property.</param>
-    /// <param name="value"></param>
-    public virtual unsafe void UpdatePropData<TValue>(string propName, in TValue value) where TValue : unmanaged
+    public int BufferID { get; } = IBufferObject.CreateBuffer();
+
+    public int Stride { get; } = Unsafe.SizeOf<T>();
+
+    public int Count { get; } = 1;
+
+    public int MemorySize => this.Count * this.Stride;
+
+    public virtual unsafe void UpdateBufferDataPropData<TValue>(string propName, in TValue value)
+        where TValue : unmanaged
     {
         int offset = Marshal.OffsetOf(typeof(T), propName).ToInt32();
 
-        fixed (void* ptrData = &_Data)
+        fixed (void* ptrData = &this.data)
         {
             void* ptrField = (byte*)ptrData + offset;
             Marshal.StructureToPtr(value, (IntPtr)ptrField, false);
 
-            UpdateRegion(offset, Unsafe.SizeOf<TValue>(), value);
+            this.UpdateBufferData(offset, Unsafe.SizeOf<TValue>(), value);
         }
     }
+
+    public void Bind(BufferTarget BufferTarget)
+    {
+        GL.BindBuffer(BufferTarget, this.BufferID);
+    }
+
+    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int bindingIndex)
+    {
+        GL.BindBufferBase(BufferRangeTarget, bindingIndex, this.BufferID);
+    }
+
     public override string ToString()
     {
-        return $"Target: [{Target}] Stride: [{Stride}] Count of elements: [{Count}] Total capacity in bytes: [{MemorySize}]\n";
+        return $"Stride: [{this.Stride}] Count of elements: [{this.Count}] Total capacity in bytes: [{this.MemorySize}]\n";
     }
+
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
-            GL.DeleteBuffer(BufferID);
+            GL.DeleteBuffer(this.BufferID);
         }
+    }
+
+    private void UpdateBufferData<TValue>(int offsetInBytes, int sizeInBytes, TValue data)
+        where TValue : struct
+    {
+        GL.NamedBufferSubData(this.BufferID, offsetInBytes, sizeInBytes, ref data);
     }
 }

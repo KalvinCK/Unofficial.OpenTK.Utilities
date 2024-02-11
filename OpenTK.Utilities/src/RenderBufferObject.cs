@@ -2,49 +2,53 @@
 
 namespace OpenTK.Utilities;
 
-public class RenderBufferObject : IBuffer, IDisposable
+public class RenderBufferObject : IRenderBufferObject, IDisposable
 {
-    public int BufferID { get; private set; }
-    public static int BufferBindedInContext { get; private set; }
     public RenderBufferObject()
     {
-        GL.CreateRenderbuffers(1, out int buffer);
-        BufferID = buffer;
+        this.BufferID = IRenderBufferObject.CreateBuffer();
     }
+
+    public int BufferID { get; private set; }
 
     public void Bind()
     {
-        GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, BufferID);
-        BufferBindedInContext = BufferID;
+        GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, this.BufferID);
+        IRenderBufferObject.BufferBindedInContext = this.BufferID;
     }
-    public static void ClearContext()
+
+    public void Storage(RenderbufferStorage RenderbufferStorage, int width, int height)
     {
-        GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, 0);
-        BufferBindedInContext = 0;
+        GL.NamedRenderbufferStorage(this.BufferID, RenderbufferStorage, width, height);
     }
+
+    public void StorageMultisampler(RenderbufferStorage RenderbufferStorage, int width, int height, int samples)
+    {
+        GL.NamedRenderbufferStorageMultisample(this.BufferID, samples, RenderbufferStorage, width, height);
+    }
+
+    public unsafe void GetParameter(RenderbufferParameterName RenderbufferParameterName, out int value)
+    {
+        GL.GetNamedRenderbufferParameter(this.BufferID, RenderbufferParameterName, out value);
+    }
+
+    public unsafe void GetParameter(RenderbufferParameterName RenderbufferParameterName, int[] values)
+    {
+        GL.GetNamedRenderbufferParameter(this.BufferID, RenderbufferParameterName, values);
+    }
+
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
-            GL.DeleteRenderbuffer(BufferID);
-            BufferID = 0;
+            GL.DeleteRenderbuffer(this.BufferID);
+            this.BufferID = 0;
         }
-    }
-    public void Storage(RenderbufferStorage renderbuffer, int width, int height)
-    {
-        GL.NamedRenderbufferStorage(BufferID, renderbuffer, width, height);
-    }
-    public void StorageMultisampler(RenderbufferStorage renderbuffer, int width, int height, int samples)
-    {
-        GL.NamedRenderbufferStorageMultisample(BufferID, samples, renderbuffer, width, height);
-    }
-    public unsafe void GetParameter(RenderbufferParameterName parameterName, out int value)
-    {
-        GL.GetNamedRenderbufferParameter(BufferID, parameterName, out value);
     }
 }

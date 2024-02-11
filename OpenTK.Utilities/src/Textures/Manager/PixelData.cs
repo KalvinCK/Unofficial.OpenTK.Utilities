@@ -1,6 +1,4 @@
-﻿
-namespace OpenTK.Utilities.Textures;
-
+﻿namespace OpenTK.Utilities.Textures;
 
 public ref struct PixelData<TPixels>(int width, int height, Span<TPixels> pixels, Channels channels)
     where TPixels : unmanaged
@@ -14,7 +12,7 @@ public ref struct PixelData<TPixels>(int width, int height, Span<TPixels> pixels
     {
         return DescType switch
         {
-            DescType.Default => Channels switch
+            DescType.Default => this.Channels switch
             {
                 Channels.RedGreenBlueAlpha => PixelDescription.RGBA,
                 Channels.RedGreenBlue => PixelDescription.RGB,
@@ -23,7 +21,7 @@ public ref struct PixelData<TPixels>(int width, int height, Span<TPixels> pixels
                 _ => PixelDescription.RGB,
             },
 
-            DescType.SrgbSpace => Channels switch
+            DescType.SrgbSpace => this.Channels switch
             {
                 Channels.RedGreenBlueAlpha => PixelDescription.SRGBA,
                 Channels.RedGreenBlue => PixelDescription.SRGB,
@@ -32,7 +30,7 @@ public ref struct PixelData<TPixels>(int width, int height, Span<TPixels> pixels
                 _ => PixelDescription.SRGB,
             },
 
-            DescType.HDR16 => Channels switch
+            DescType.HDR16 => this.Channels switch
             {
                 Channels.RedGreenBlueAlpha => PixelDescription.HDR_RGBA,
                 Channels.RedGreenBlue => PixelDescription.HDR_RGB,
@@ -41,7 +39,7 @@ public ref struct PixelData<TPixels>(int width, int height, Span<TPixels> pixels
                 _ => PixelDescription.HDR_RGB,
             },
 
-            DescType.HDR32 => Channels switch
+            DescType.HDR32 => this.Channels switch
             {
                 Channels.RedGreenBlueAlpha => PixelDescription.Half_HDR_RGBA,
                 Channels.RedGreenBlue => PixelDescription.Half_HDR_RGB,
@@ -50,7 +48,7 @@ public ref struct PixelData<TPixels>(int width, int height, Span<TPixels> pixels
                 _ => PixelDescription.Half_HDR_RGB,
             },
 
-            _ => GetPixelDesc(DescType.Default)
+            _ => this.GetPixelDesc(DescType.Default)
         };
     }
 }

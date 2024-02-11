@@ -4,170 +4,197 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities;
 
-public class BufferStructuredDynamic<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw) : 
-    IBufferObject, IDisposable where T : struct
+public class BufferStructuredDynamic<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw) : IBufferObject, IDisposable
+    where T : struct
 {
-    public int Stride { get; } = Unsafe.SizeOf<T>();
-    public string DebugName { get; set; } = IBufferObject.Unnamed;
-    public BufferUsageHint UsageHint { get; private set; } = BufferUsageHint;
-    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
-    public bool HasAllocate { get; private set; } = false;
-    public int Count { get; protected set; }
-    public int MemorySize => Count * Stride;
-
-    #region Init
-    public BufferStructuredDynamic(int initialCount, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw) 
-        : this(BufferUsageHint) 
+    public BufferStructuredDynamic(int initialCount, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
+        : this(BufferUsageHint)
     {
-        ToAllocate(initialCount);
+        this.ToAllocate(initialCount);
     }
+
     public BufferStructuredDynamic(T[] initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
         : this(BufferUsageHint)
     {
-        ToAllocate(initStructuredCollection);
+        this.ToAllocate(initStructuredCollection);
     }
+
     public BufferStructuredDynamic(Span<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
         : this(BufferUsageHint)
     {
-        ToAllocate(initStructuredCollection);
+        this.ToAllocate(initStructuredCollection);
     }
+
     public BufferStructuredDynamic(ReadOnlySpan<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
-        : this(BufferUsageHint) 
+        : this(BufferUsageHint)
     {
-        ToAllocate(initStructuredCollection);
+        this.ToAllocate(initStructuredCollection);
     }
+
     public BufferStructuredDynamic(List<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
-        : this(BufferUsageHint) 
+        : this(BufferUsageHint)
     {
-        ToAllocate(initStructuredCollection);
+        this.ToAllocate(initStructuredCollection);
     }
+
     public BufferStructuredDynamic(IReadOnlyList<T> initStructuredCollection, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
-        : this(BufferUsageHint) 
+        : this(BufferUsageHint)
     {
-        ToAllocate(initStructuredCollection);
+        this.ToAllocate(initStructuredCollection);
     }
-    #endregion
+
+    public int Stride { get; } = Unsafe.SizeOf<T>();
+
+    public BufferUsageHint UsageHint { get; private set; } = BufferUsageHint;
+
+    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
+
+    public bool Allocated { get; private set; } = false;
+
+    public int Count { get; protected set; }
+
+    public int MemorySize => this.Count * this.Stride;
 
     #region Allocate
     public void ToAllocate(int count)
     {
-        Count = count;
-        GL.NamedBufferData(BufferID, MemorySize, IntPtr.Zero, UsageHint);
+        this.Allocated = true;
+        this.Count = count;
+        GL.NamedBufferData(this.BufferID, this.MemorySize, IntPtr.Zero, this.UsageHint);
     }
+
     public void ToAllocate(T[] structuredCollection)
     {
-        Count = structuredCollection.Length;
-        GL.NamedBufferData(BufferID, MemorySize, ref structuredCollection[0], UsageHint);
+        this.Allocated = true;
+        this.Count = structuredCollection.Length;
+        GL.NamedBufferData(this.BufferID, this.MemorySize, ref structuredCollection[0], this.UsageHint);
     }
+
     public void ToAllocate(Span<T> structuredCollection)
     {
-        Count = structuredCollection.Length;
-        GL.NamedBufferData(BufferID, MemorySize, ref structuredCollection[0], UsageHint);
+        this.Allocated = true;
+        this.Count = structuredCollection.Length;
+        GL.NamedBufferData(this.BufferID, this.MemorySize, ref structuredCollection[0], this.UsageHint);
     }
+
     public unsafe void ToAllocate(ReadOnlySpan<T> structuredCollection)
     {
-        Count = structuredCollection.Length;
+        this.Allocated = true;
+        this.Count = structuredCollection.Length;
         fixed (void* ptr = &structuredCollection[0])
         {
-            GL.NamedBufferData(BufferID, MemorySize, (IntPtr)ptr, UsageHint);
+            GL.NamedBufferData(this.BufferID, this.MemorySize, (IntPtr)ptr, this.UsageHint);
         }
     }
+
     public void ToAllocate(List<T> structuredCollection)
     {
-        ToAllocate(CollectionsMarshal.AsSpan(structuredCollection));
+        this.ToAllocate(CollectionsMarshal.AsSpan(structuredCollection));
     }
+
     public void ToAllocate(IReadOnlyList<T> structuredCollection)
     {
-        ToAllocate((List<T>)structuredCollection);
+        this.ToAllocate((List<T>)structuredCollection);
     }
+
     #endregion
 
     #region Update
     public void Update(T[] structuredCollection)
     {
-        GL.NamedBufferSubData(BufferID, 0, MemorySize, ref structuredCollection[0]);
+        GL.NamedBufferSubData(this.BufferID, 0, this.MemorySize, ref structuredCollection[0]);
     }
+
     public void Update(Span<T> structuredCollection)
     {
-        GL.NamedBufferSubData(BufferID, 0, MemorySize, ref structuredCollection[0]);
+        GL.NamedBufferSubData(this.BufferID, 0, this.MemorySize, ref structuredCollection[0]);
     }
+
     public unsafe void Update(ReadOnlySpan<T> structuredCollection)
     {
         fixed (void* ptr = &structuredCollection[0])
         {
-            GL.NamedBufferSubData(BufferID, 0, MemorySize, (IntPtr)ptr);
+            GL.NamedBufferSubData(this.BufferID, 0, this.MemorySize, (IntPtr)ptr);
         }
     }
+
     public void Update(List<T> structuredCollection)
     {
-        Update(CollectionsMarshal.AsSpan(structuredCollection));
+        this.Update(CollectionsMarshal.AsSpan(structuredCollection));
     }
+
     public void Update(IReadOnlyList<T> structuredCollection)
     {
-        Update(CollectionsMarshal.AsSpan((List<T>)structuredCollection));
+        this.Update(CollectionsMarshal.AsSpan((List<T>)structuredCollection));
     }
+
     public void Update(int indexStructure, T structuredCollection)
     {
-        GL.NamedBufferSubData(BufferID, indexStructure * Stride, Stride, ref structuredCollection);
+        GL.NamedBufferSubData(this.BufferID, indexStructure * this.Stride, this.Stride, ref structuredCollection);
     }
     #endregion
 
-    #region ###
     public T GetData(int index)
     {
-        var data = new T();
-        GL.GetNamedBufferSubData(BufferID, index * Stride, Stride, ref data);
+        var data = default(T);
+        GL.GetNamedBufferSubData(this.BufferID, index * this.Stride, this.Stride, ref data);
         return data;
     }
+
     public T[] GetData(int index, int indexFirst)
     {
         T[] data = new T[indexFirst - index];
-        GL.GetNamedBufferSubData(BufferID, index * Stride, indexFirst * Stride, data);
+        GL.GetNamedBufferSubData(this.BufferID, index * this.Stride, indexFirst * this.Stride, data);
         return data;
     }
+
     public T[] GetAllData()
     {
-        T[] data = new T[Count];
-        GL.GetNamedBufferSubData(BufferID, 0, MemorySize, data);
+        T[] data = new T[this.Count];
+        GL.GetNamedBufferSubData(this.BufferID, 0, this.MemorySize, data);
         return data;
     }
 
     public void Clear()
     {
-        GL.NamedBufferSubData(BufferID, 0, MemorySize, IntPtr.Zero);
+        GL.NamedBufferSubData(this.BufferID, 0, this.MemorySize, IntPtr.Zero);
     }
+
     public void Clear(int indexStructure)
     {
-        GL.NamedBufferSubData(BufferID, indexStructure * Stride, Stride, IntPtr.Zero);
+        GL.NamedBufferSubData(this.BufferID, indexStructure * this.Stride, this.Stride, IntPtr.Zero);
     }
-    #endregion
 
     public void Bind(BufferTarget BufferTarget)
     {
-        GL.BindBuffer(BufferTarget, BufferID);
+        GL.BindBuffer(BufferTarget, this.BufferID);
     }
-    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int BindingIndex)
+
+    public void BindBufferBase(BufferRangeTarget BufferRangeTarget, int bindingIndex)
     {
-        GL.BindBufferBase(BufferRangeTarget, BindingIndex, BufferID);
+        GL.BindBufferBase(BufferRangeTarget, bindingIndex, this.BufferID);
     }
+
     public override string ToString()
     {
-        return $"Stride: [{Stride}] Count of elements: [{Count}] Total capacity in bytes: [{MemorySize}]\n";
+        return $"Stride: [{this.Stride}] Count of elements: [{this.Count}] Total capacity in bytes: [{this.MemorySize}]\n";
     }
+
     public void Dispose()
     {
-        Dispose(true);
+        this.Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
-            GL.DeleteBuffer(BufferID);
-            DebugName = IBufferObject.Unnamed;
-            BufferID = 0;
-            Count = 0;
-            UsageHint = 0;
+            GL.DeleteBuffer(this.BufferID);
+            this.BufferID = 0;
+            this.Count = 0;
+            this.UsageHint = 0;
+            this.Allocated = false;
         }
     }
 }

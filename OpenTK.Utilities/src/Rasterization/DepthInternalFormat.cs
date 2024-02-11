@@ -1,5 +1,4 @@
-﻿
-namespace OpenTK.Utilities.Rasterization;
+﻿namespace OpenTK.Utilities.Rasterization;
 public enum DepthInternalFormat
 {
     DepthComponent16 = 33189,
