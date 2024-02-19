@@ -1,3 +1,6 @@
 /OpenTK.Utilities/bin
 /OpenTK.Utilities/obj
 /.vs/
+/Test/bin
+/Test/obj
+/ResourceManager

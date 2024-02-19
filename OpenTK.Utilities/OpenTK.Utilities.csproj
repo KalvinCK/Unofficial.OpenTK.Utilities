@@ -7,17 +7,25 @@
 		<allowUnsafeBlocks>true</allowUnsafeBlocks>
 		<RootNamespace>OpenTK.Utilities</RootNamespace>
 		<Platforms>AnyCPU;x64</Platforms>
+		<IncludeSymbols>False</IncludeSymbols>
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="src\Images\STB\Licence.txt" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="OpenTK.Graphics" Version="4.8.0" />
-		<PackageReference Include="StbImageSharp" Version="2.27.13" />
-		<PackageReference Include="StbImageWriteSharp" Version="1.16.7" />
 	</ItemGroup>
 
   <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="src\Pipeline\" />
+  </ItemGroup>
+
   
 	<Import Project="..\props\common.props" />
 	<Import Project="..\props\stylecop.props" />

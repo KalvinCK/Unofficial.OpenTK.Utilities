@@ -29,12 +29,6 @@ public abstract class TexturesImplements : ITexture, IDisposable
         this.CreateNewTextureBuffer();
     }
 
-    /// <summary>
-    /// Gets Handler texture.
-    /// <para>
-    /// #extension: GL_ARB_bindless_texture : required.
-    /// </para>
-    /// </summary>
     public long BindlessHandler
     {
         get
@@ -53,7 +47,7 @@ public abstract class TexturesImplements : ITexture, IDisposable
 
     public TextureTarget Target { get; }
 
-    public SizedInternalFormat InternalFormat { get; private set; } = 0;
+    public TextureFormat Format { get; private set; } = TextureFormat.None;
 
     public int BufferID { get; private set; } = 0;
 
@@ -66,31 +60,13 @@ public abstract class TexturesImplements : ITexture, IDisposable
         get => this.TextureFiltering;
         set
         {
-            if (this.Target == TextureTarget.TextureRectangle)
-            {
-                var filters = new[] { 9728, 9729 };
-                var resultMin = filters.Contains((int)value.MinFilter);
-                var resultMag = filters.Contains((int)value.MagFilter);
-
-                if (!resultMin && !resultMag)
-                {
-                    Helpers.PrintWarning("Rectangle texture do not support mipmaps filtering.");
-                    return;
-                }
-            }
-
             this.TextureFiltering = value;
             GL.TextureParameter(this.BufferID, TextureParameterName.TextureMinFilter, (int)value.MinFilter);
             GL.TextureParameter(this.BufferID, TextureParameterName.TextureMagFilter, (int)value.MagFilter);
-
-            if (value.GenerateMipmap)
-            {
-                this.GenerateMipmap();
-            }
         }
     }
 
-    internal TextureFiltering TextureFiltering { get; set; } = default;
+    internal TextureFiltering TextureFiltering { get; set; }
 
     internal TextureWrapMode WrapModeS { get; set; } = 0;
 
@@ -121,7 +97,7 @@ public abstract class TexturesImplements : ITexture, IDisposable
 
     public void BindToImageUnit(int unit, int level, bool layered, int layer, TextureAccess TextureAccess)
     {
-        GL.BindImageTexture(unit, this.BufferID, level, layered, layer, TextureAccess, this.InternalFormat);
+        GL.BindImageTexture(unit, this.BufferID, level, layered, layer, TextureAccess, (SizedInternalFormat)this.Format);
     }
 
     #region Sets
@@ -206,6 +182,24 @@ public abstract class TexturesImplements : ITexture, IDisposable
         GL.ClearTexImage(this.BufferID, level, PixelFormat, PixelType, value);
     }
 
+    public void GenerateMipmap()
+    {
+        if (this.HasAllocated is false)
+        {
+            Helpers.Print("Mips maps cannot be applied to textures that have been allocated.");
+            return;
+        }
+        else if (this.Levels <= 1)
+        {
+            Helpers.Print("It makes no sense and is unnecessary to use mipmaps on textures allocated with only 1 level.");
+            return;
+        }
+        else
+        {
+            GL.GenerateTextureMipmap(this.BufferID);
+        }
+    }
+
     public void BecomeNonResident()
     {
         if (this.textureBindlessHandler is not 0)
@@ -274,14 +268,9 @@ public abstract class TexturesImplements : ITexture, IDisposable
     }
 
     #region Storage
-    internal void NewAllocation(SizedInternalFormat SizedInternalFormat, int width = 1, int height = 1, int depth = 1, int levels = 1)
+    internal void Storage(TextureFormat TextureFormat, int width = 1, int height = 1, int depth = 1, int levels = 1)
     {
-        width = Math.Max(width, 1);
-        height = Math.Max(height, 1);
-        depth = Math.Max(depth, 1);
-        levels = Math.Max(levels, 1);
-
-        if ((this.Width == width && this.Height == height && this.Depth == depth && this.Levels == levels && this.InternalFormat == SizedInternalFormat) && this.HasAllocated)
+        if ((this.Width == width && this.Height == height && this.Depth == depth && this.Levels == levels && this.Format == TextureFormat) && this.HasAllocated)
         {
             return;
         }
@@ -290,93 +279,96 @@ public abstract class TexturesImplements : ITexture, IDisposable
             this.CreateNewTextureBuffer();
         }
 
+        this.Format = TextureFormat;
+        this.Levels = Math.Max(levels, 1);
+        this.Width = Math.Max(width, 1);
+        this.Height = Math.Max(height, 1);
+        this.Depth = Math.Max(depth, 1);
+        this.HasAllocated = true;
+
+        var interForm = (SizedInternalFormat)this.Format;
+
         switch (this.Dimension)
         {
             case TextureDimension.One:
-                GL.TextureStorage1D(this.BufferID, levels, SizedInternalFormat, width);
+                GL.TextureStorage1D(this.BufferID, this.Levels, interForm, this.Width);
                 break;
 
             case TextureDimension.Two:
-                GL.TextureStorage2D(this.BufferID, levels, SizedInternalFormat, width, height);
+                GL.TextureStorage2D(this.BufferID, this.Levels, interForm, this.Width, this.Height);
                 break;
 
             case TextureDimension.Three:
-                GL.TextureStorage3D(this.BufferID, levels, SizedInternalFormat, width, height, depth);
+                GL.TextureStorage3D(this.BufferID, this.Levels, interForm, this.Width, this.Height, this.Depth);
                 break;
         }
-
-        this.InternalFormat = SizedInternalFormat;
-        this.Levels = levels;
-        this.Width = width;
-        this.Height = height;
-        this.Depth = depth;
-        this.HasAllocated = true;
     }
+    #endregion
 
-    internal void UpdatePixels<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, List<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+    #region SubData
+    internal void UpdateSubData<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, List<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
         where T : unmanaged
     {
         Span<T> span = CollectionsMarshal.AsSpan(pixels);
-        if (span.Length > 0)
+        if (span.Length > 1)
         {
-            this.UpdatePixels(TextureDimension, width, height, depth, PixelFormat, PixelType, pixels[0], level, xOffset, yOffset, zOffset);
-        }
-        else
-        {
-            this.UpdatePixels(TextureDimension, width, height, depth, PixelFormat, PixelType, IntPtr.Zero, level, xOffset, yOffset, zOffset);
+            this.UpdateSubData(TextureDimension, width, height, depth, PixelFormat, PixelType, pixels[0], level, xOffset, yOffset, zOffset);
         }
     }
 
-    internal void UpdatePixels<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, Span<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+    internal void UpdateSubData<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, Span<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
         where T : unmanaged
     {
-        if (pixels.Length > 0)
+        if (pixels.Length > 1)
         {
-            this.UpdatePixels(TextureDimension, width, height, depth, PixelFormat, PixelType, pixels[0], level, xOffset, yOffset, zOffset);
-        }
-        else
-        {
-            this.UpdatePixels(TextureDimension, width, height, depth, PixelFormat, PixelType, IntPtr.Zero, level, xOffset, yOffset, zOffset);
+            this.UpdateSubData(TextureDimension, width, height, depth, PixelFormat, PixelType, pixels[0], level, xOffset, yOffset, zOffset);
         }
     }
 
-    internal void UpdatePixels<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, ReadOnlySpan<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+    internal void UpdateSubData<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, ReadOnlySpan<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
         where T : unmanaged
     {
-        if (pixels.Length > 0)
+        if (pixels.Length > 1)
         {
-            this.UpdatePixels(TextureDimension, width, height, depth, PixelFormat, PixelType, pixels[0], level, xOffset, yOffset, zOffset);
-        }
-        else
-        {
-            this.UpdatePixels(TextureDimension, width, height, depth, PixelFormat, PixelType, IntPtr.Zero, level, xOffset, yOffset, zOffset);
+            this.UpdateSubData(TextureDimension, width, height, depth, PixelFormat, PixelType, pixels[0], level, xOffset, yOffset, zOffset);
         }
     }
 
-    internal void UpdatePixels<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, T[] pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+    internal void UpdateSubData<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, T[] pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
         where T : unmanaged
     {
-        if (pixels.Length > 0)
+        if (pixels.Length > 1)
         {
-            this.UpdatePixels(TextureDimension, width, height, depth, PixelFormat, PixelType, pixels[0], level, xOffset, yOffset, zOffset);
-        }
-        else
-        {
-            this.UpdatePixels(TextureDimension, width, height, depth, PixelFormat, PixelType, IntPtr.Zero, level, xOffset, yOffset, zOffset);
+            this.UpdateSubData(TextureDimension, width, height, depth, PixelFormat, PixelType, pixels[0], level, xOffset, yOffset, zOffset);
         }
     }
 
-    internal unsafe void UpdatePixels<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, in T pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+    internal unsafe void UpdateSubData<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, in T pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
         where T : unmanaged
     {
         fixed (void* ptr = &pixels)
         {
-            this.UpdatePixels(TextureDimension, width, height, depth, PixelFormat, PixelType, (nint)ptr, level, xOffset, yOffset, zOffset);
+            this.UpdateSubData(TextureDimension, width, height, depth, PixelFormat, PixelType, (IntPtr)ptr, level, xOffset, yOffset, zOffset);
         }
     }
 
-    internal void UpdatePixels(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, nint pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+    internal void UpdateSubData(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, IntPtr pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
     {
+        if (this.HasAllocated is false)
+        {
+            throw new UnallocatedTextureException();
+        }
+
+        /* Exceptions to this call may occur due to the following factors.
+         *
+         * The pixel data may be invalid or null.
+         *
+         * The pixel type(PixelType) may not match the pixel data types.
+         *
+         * The pixel format(PixelFormat) may not match the pixel data.
+         * For example, suppose the raw pixel data is defined in 4 channels (RGBA),
+         * if an attempt is made to send these values with the 'PixelFormat' in (RGB),
+         * an error may occur.*/
         switch (TextureDimension)
         {
             case TextureDimension.One:
@@ -392,17 +384,86 @@ public abstract class TexturesImplements : ITexture, IDisposable
     }
     #endregion
 
+    #region SubCompress
+    internal unsafe void UpdateSubDataCompress<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, int imageSize, List<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+       where T : unmanaged
+    {
+        var span = CollectionsMarshal.AsSpan(pixels);
+        if (span.Length > 1)
+        {
+            this.UpdateSubDataCompress(TextureDimension, width, height, depth, PixelFormat, imageSize, span[0], level, xOffset, yOffset, zOffset);
+        }
+    }
+
+    internal unsafe void UpdateSubDataCompress<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, int imageSize, Span<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+        where T : unmanaged
+    {
+        if (pixels.Length > 1)
+        {
+            this.UpdateSubDataCompress(TextureDimension, width, height, depth, PixelFormat, imageSize, pixels[0], level, xOffset, yOffset, zOffset);
+        }
+    }
+
+    internal unsafe void UpdateSubDataCompress<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, int imageSize, ReadOnlySpan<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+        where T : unmanaged
+    {
+        if (pixels.Length > 1)
+        {
+            this.UpdateSubDataCompress(TextureDimension, width, height, depth, PixelFormat, imageSize, pixels[0], level, xOffset, yOffset, zOffset);
+        }
+    }
+
+    internal unsafe void UpdateSubDataCompress<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, int imageSize, T[] pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+        where T : unmanaged
+    {
+        if (pixels.Length > 1)
+        {
+            this.UpdateSubDataCompress(TextureDimension, width, height, depth, PixelFormat, imageSize, pixels[0], level, xOffset, yOffset, zOffset);
+        }
+    }
+
+    internal unsafe void UpdateSubDataCompress<T>(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, int imageSize, in T pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+        where T : unmanaged
+    {
+        fixed (void* ptr = &pixels)
+        {
+            this.UpdateSubDataCompress(TextureDimension, width, height, depth, PixelFormat, imageSize, (IntPtr)ptr, level, xOffset, yOffset, zOffset);
+        }
+    }
+
+    internal void UpdateSubDataCompress(TextureDimension TextureDimension, int width, int height, int depth, PixelFormat PixelFormat, int imageSize, IntPtr pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+    {
+        if (this.HasAllocated is false)
+        {
+            throw new UnallocatedTextureException();
+        }
+
+        switch (TextureDimension)
+        {
+            case TextureDimension.One:
+                GL.Ext.CompressedTextureSubImage1D(this.BufferID, this.Target, level, xOffset, width, PixelFormat, imageSize, pixels);
+                break;
+            case TextureDimension.Two:
+                GL.Ext.CompressedTextureSubImage2D(this.BufferID, this.Target, level, xOffset, yOffset, width, height, PixelFormat, imageSize, pixels);
+                break;
+            case TextureDimension.Three:
+                GL.Ext.CompressedTextureSubImage3D(this.BufferID, this.Target, level, xOffset, yOffset, zOffset, width, height, depth, PixelFormat, imageSize, pixels);
+                break;
+        }
+    }
+    #endregion
+
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
             this.BecomeNonResident();
-            GL.DeleteTexture(this.BufferID);
+            this.DeleteTexture();
 
             // Reset Values
             this.BufferID = 0;
             this.HasAllocated = false;
-            this.InternalFormat = 0;
+            this.Format = TextureFormat.None;
             this.Levels = 0;
             this.Width = 1;
             this.Height = 1;
@@ -415,37 +476,17 @@ public abstract class TexturesImplements : ITexture, IDisposable
         }
     }
 
-    private void GenerateMipmap()
+    private void CreateNewTextureBuffer()
     {
-        if (this.Target != TextureTarget.TextureRectangle)
-        {
-            Helpers.PrintWarning("Filters related to mipmaps cannot be created applied to a Rectangle texture.");
-            return;
-        }
-
-        if (this.HasAllocated is false)
-        {
-            Helpers.PrintWarning("Mips maps cannot be applied to textures that have been allocated.");
-            return;
-        }
-        else if (this.Levels <= 1)
-        {
-            Helpers.PrintWarning("It doesn't make sense and it's unnecessary to use mip maps with just 1 level allocated.");
-            return;
-        }
-        else
-        {
-            GL.GenerateTextureMipmap(this.BufferID);
-        }
+        this.DeleteTexture();
+        this.BufferID = ITexture.CreateTextureBuffer(this.Target);
     }
 
-    private void CreateNewTextureBuffer()
+    private void DeleteTexture()
     {
         if (this.BufferID != 0)
         {
-            this.Dispose(true);
+            GL.DeleteTexture(this.BufferID);
         }
-
-        this.BufferID = ITexture.CreateTextureBuffer(this.Target);
     }
 }

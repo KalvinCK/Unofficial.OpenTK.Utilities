@@ -1,6 +1,6 @@
 ﻿namespace OpenTK.Utilities.Textures;
 
-public enum CubeMapLayer : int
+public enum CubeMapLayer
 {
     PositiveX,
     NegativeX,

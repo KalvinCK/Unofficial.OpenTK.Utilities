@@ -28,3 +28,5 @@ dotnet_diagnostic.SA1124.severity = none # regions
 dotnet_diagnostic.SA1009.severity = none # closing parenthesis
 dotnet_diagnostic.SA1602.severity = none # enumeration itens doc
 dotnet_diagnostic.SA1117.severity = none # parameters line
+dotnet_diagnostic.SA1502.severity = none # opening and closing braces is written completely on a single line.
+dotnet_diagnostic.SA1601.severity = none # partial docs

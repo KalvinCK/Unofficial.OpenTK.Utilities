@@ -38,7 +38,7 @@ public abstract class TexturesMultiSamplerImplements : ITexture, IDisposable
 
     public TextureTarget Target { get; }
 
-    public SizedInternalFormat InternalFormat { get; set; } = 0;
+    public TextureFormat Format { get; set; } = 0;
 
     public bool HasAllocated { get; private set; } = false;
 
@@ -71,7 +71,7 @@ public abstract class TexturesMultiSamplerImplements : ITexture, IDisposable
 
     public void BindToImageUnit(int unit, int level, bool layered, int layer, TextureAccess TextureAccess)
     {
-        GL.BindImageTexture(unit, this.BufferID, level, layered, layer, TextureAccess, this.InternalFormat);
+        GL.BindImageTexture(unit, this.BufferID, level, layered, layer, TextureAccess, (SizedInternalFormat)this.Format);
     }
 
     public unsafe void Clear<TData>(PixelFormat PixelFormat, PixelType PixelType, in TData value, int level = 0)
@@ -94,14 +94,9 @@ public abstract class TexturesMultiSamplerImplements : ITexture, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    internal void AllocateTextures(SizedInternalFormat SizedInternalFormat, int width, int height, int depth, int samples, bool fixedSampleLocations)
+    internal void AllocateTextures(TextureFormat TextureFormat, int width, int height, int depth, int samples, bool fixedSampleLocations)
     {
-        width = Math.Max(width, 1);
-        height = Math.Max(height, 1);
-        depth = Math.Max(depth, 1);
-        samples = Math.Max(samples, 1);
-
-        if (this.CompareParams(SizedInternalFormat, width, height, depth, samples, fixedSampleLocations) && this.HasAllocated)
+        if (this.CompareParams(TextureFormat, width, height, depth, samples, fixedSampleLocations) && this.HasAllocated)
         {
             return;
         }
@@ -110,24 +105,24 @@ public abstract class TexturesMultiSamplerImplements : ITexture, IDisposable
             this.CreateNewTextureBuffer();
         }
 
+        this.Format = TextureFormat;
+        this.Width = Math.Max(width, 1);
+        this.Height = Math.Max(height, 1);
+        this.Depth = Math.Max(depth, 1);
+        this.Samples = Math.Max(samples, 1);
+        this.FixedSampleLocations = fixedSampleLocations;
+        this.HasAllocated = true;
+
         switch (this.Dimension)
         {
             case TextureDimension.Two:
-                GL.TextureStorage2DMultisample(this.BufferID, samples, SizedInternalFormat, width, height, fixedSampleLocations);
+                GL.TextureStorage2DMultisample(this.BufferID, this.Samples, (SizedInternalFormat)this.Format, this.Width, this.Height, this.FixedSampleLocations);
                 break;
 
             case TextureDimension.Three:
-                GL.TextureStorage3DMultisample(this.BufferID, samples, SizedInternalFormat, width, height, depth, fixedSampleLocations);
+                GL.TextureStorage3DMultisample(this.BufferID, this.Samples, (SizedInternalFormat)this.Format, this.Width, this.Height, this.Depth, this.FixedSampleLocations);
                 break;
         }
-
-        this.InternalFormat = SizedInternalFormat;
-        this.Width = width;
-        this.Height = height;
-        this.Depth = depth;
-        this.Samples = samples;
-        this.FixedSampleLocations = fixedSampleLocations;
-        this.HasAllocated = true;
     }
 
     protected virtual void Dispose(bool disposing)
@@ -139,7 +134,7 @@ public abstract class TexturesMultiSamplerImplements : ITexture, IDisposable
 
             // Reset Values
             this.HasAllocated = false;
-            this.InternalFormat = 0;
+            this.Format = 0;
             this.BufferID = 0;
             this.Width = 1;
             this.Height = 1;
@@ -160,16 +155,20 @@ public abstract class TexturesMultiSamplerImplements : ITexture, IDisposable
 
     private void CreateNewTextureBuffer()
     {
-        if (this.BufferID != 0)
-        {
-            this.Dispose(true);
-        }
-
+        this.DeleteTexture();
         this.BufferID = ITexture.CreateTextureBuffer(this.Target);
     }
 
-    private bool CompareParams(SizedInternalFormat SizedInternalFormat, int width, int height, int depth, int samples, bool fixedSampleLocations)
+    private bool CompareParams(TextureFormat TextureFormat, int width, int height, int depth, int samples, bool fixedSampleLocations)
     {
-        return this.Width == width && this.Height == height && this.Depth == depth && this.Samples == samples && this.InternalFormat == SizedInternalFormat && this.FixedSampleLocations == fixedSampleLocations;
+        return this.Width == width && this.Height == height && this.Depth == depth && this.Samples == samples && this.Format == TextureFormat && this.FixedSampleLocations == fixedSampleLocations;
+    }
+
+    private void DeleteTexture()
+    {
+        if (this.BufferID != 0)
+        {
+            GL.DeleteTexture(this.BufferID);
+        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Utilities.Objects;
 using OpenTK.Utilities.Textures;
 
 namespace OpenTK.Utilities.Rasterization;
@@ -46,7 +47,7 @@ public class RasterFrameDepthCube : IDisposable
         {
             this.size = new Size(Math.Max(value.Width, 1), Math.Max(value.Height, 1));
 
-            this.textureDepth.ToAllocate((SizedInternalFormat)this.internalFormat, this.size.Width, this.size.Height);
+            this.textureDepth.AllocateStorage((TextureFormat)this.internalFormat, this.size.Width, this.size.Height);
             this.textureDepth.Filtering = this.textureFiltering;
             this.textureDepth.Wrapping = this.textureWrapping;
             this.samplerObjectDepth.AttachTexture(this.textureDepth);

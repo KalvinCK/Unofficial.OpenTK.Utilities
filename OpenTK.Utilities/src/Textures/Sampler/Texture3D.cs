@@ -5,10 +5,10 @@ namespace OpenTK.Utilities.Textures;
 
 public class Texture3D() : TexturesImplements(TextureTarget3d.TextureCubeMapArray), ITexture3D
 {
-    public Texture3D(SizedInternalFormat SizedInternalFormat, int width, int height, int depth, int levels = 1)
+    public Texture3D(TextureFormat TextureFormat, int width, int height, int depth, int levels = 1)
         : this()
     {
-        this.NewAllocation(SizedInternalFormat, width, height, depth, levels);
+        this.Storage(TextureFormat, width, height, depth, levels);
     }
 
     public new int Width => base.Width;
@@ -41,44 +41,99 @@ public class Texture3D() : TexturesImplements(TextureTarget3d.TextureCubeMapArra
         base.GetSizeMipmap(out width, out height, out depth, level);
     }
 
-    public void ToAllocate(SizedInternalFormat SizedInternalFormat, int width, int height, int depth, int levels = 1)
+    public void AllocateStorage(TextureFormat TextureFormat, int width, int height, int depth, int levels = 1)
     {
-        this.NewAllocation(SizedInternalFormat, width, height, depth, levels);
+        this.Storage(TextureFormat, width, height, depth, levels);
     }
 
+    #region Update
     public void Update<T>(int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, List<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
         where T : unmanaged
     {
-        this.UpdatePixels(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
+        this.UpdateSubData(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
     }
 
     public void Update<T>(int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, Span<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
         where T : unmanaged
     {
-        this.UpdatePixels(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
+        this.UpdateSubData(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
     }
 
     public void Update<T>(int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, ReadOnlySpan<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
         where T : unmanaged
     {
-        this.UpdatePixels(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
+        this.UpdateSubData(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
     }
 
     public void Update<T>(int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, T[] pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
         where T : unmanaged
     {
-        this.UpdatePixels(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
+        this.UpdateSubData(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
     }
 
     public void Update<T>(int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, in T pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
         where T : unmanaged
     {
-        this.UpdatePixels(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
+        this.UpdateSubData(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
     }
 
     public void Update(int width, int height, int depth, PixelFormat PixelFormat, PixelType PixelType, nint pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
     {
-        this.UpdatePixels(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
+        this.UpdateSubData(TextureDimension.Three, width, height, depth, PixelFormat, PixelType, pixels, level, xOffset, yOffset, zOffset);
+    }
+    #endregion
+
+    #region UpdateCompress
+    public void UpdateCompress<T>(int width, int height, int depth, PixelFormat PixelFormat, int imageSize, List<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+        where T : unmanaged
+    {
+        this.UpdateSubDataCompress(TextureDimension.Three, width, height, depth, PixelFormat, imageSize, pixels, level, xOffset, yOffset, zOffset);
+    }
+
+    public void UpdateCompress<T>(int width, int height, int depth, PixelFormat PixelFormat, int imageSize, Span<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+        where T : unmanaged
+    {
+        this.UpdateSubDataCompress(TextureDimension.Three, width, height, depth, PixelFormat, imageSize, pixels, level, xOffset, yOffset, zOffset);
+    }
+
+    public void UpdateCompress<T>(int width, int height, int depth, PixelFormat PixelFormat, int imageSize, ReadOnlySpan<T> pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+        where T : unmanaged
+    {
+        this.UpdateSubDataCompress(TextureDimension.Three, width, height, depth, PixelFormat, imageSize, pixels, level, xOffset, yOffset, zOffset);
+    }
+
+    public void UpdateCompress<T>(int width, int height, int depth, PixelFormat PixelFormat, int imageSize, T[] pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+        where T : unmanaged
+    {
+        this.UpdateSubDataCompress(TextureDimension.Three, width, height, depth, PixelFormat, imageSize, pixels, level, xOffset, yOffset, zOffset);
+    }
+
+    public void UpdateCompress<T>(int width, int height, int depth, PixelFormat PixelFormat, int imageSize, in T pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+        where T : unmanaged
+    {
+        this.UpdateSubDataCompress(TextureDimension.Three, width, height, depth, PixelFormat, imageSize, pixels, level, xOffset, yOffset, zOffset);
+    }
+
+    public void UpdateCompress(int width, int height, int depth, PixelFormat PixelFormat, int imageSize, nuint pixels, int level = 0, int xOffset = 0, int yOffset = 0, int zOffset = 0)
+    {
+        this.UpdateSubDataCompress(TextureDimension.Three, width, height, depth, PixelFormat, imageSize, pixels, level, xOffset, yOffset, zOffset);
+    }
+    #endregion
+
+    public override string ToString()
+    {
+        return
+            $"Dimension: {this.Dimension}\n" +
+            $"Target: {this.Target}\n" +
+            $"InternalFormat: {this.Format}\n" +
+            $"HasAllocated: {this.HasAllocated}\n" +
+            $"Levels: {this.Levels}\n" +
+            $"Width: {this.Width}\n" +
+            $"Height: {this.Height}\n" +
+            $"Layers: {this.Layers}\n" +
+            $"Size: {this.Size}\n" +
+            $"Filtering: {this.Filtering}\n" +
+            $"Wrapping: {this.Wrapping}\n";
     }
 
     public bool CopyGPU<TTexture>(
@@ -97,7 +152,7 @@ public class Texture3D() : TexturesImplements(TextureTarget3d.TextureCubeMapArra
 
     public Texture3D CloneGPU()
     {
-        Texture3D dstTexture = new Texture3D(this.InternalFormat, base.Width, base.Height, this.Depth, this.Levels);
+        Texture3D dstTexture = new Texture3D(this.Format, base.Width, base.Height, this.Depth, this.Levels);
 
         for (int level = 0; level < this.Levels; level++)
         {

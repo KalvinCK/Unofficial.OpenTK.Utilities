@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
+using OpenTK.Utilities.Objects;
 using OpenTK.Utilities.Textures;
 
 namespace OpenTK.Utilities.Rasterization;
@@ -47,7 +48,7 @@ public class Raster2DDepth : IDisposable
         {
             this.size = new Size(Math.Max(value.Width, 1), Math.Max(value.Height, 1));
 
-            this.texture.ToAllocate((SizedInternalFormat)this.internalFormat, this.size.Width, this.size.Height);
+            this.texture.AllocateStorage((TextureFormat)this.internalFormat, this.size.Width, this.size.Height);
             this.texture.Filtering = this.TextureFiltering;
             this.texture.Wrapping = this.TextureWrapping;
             this.texture.SetBorderColor(Vector4.One);

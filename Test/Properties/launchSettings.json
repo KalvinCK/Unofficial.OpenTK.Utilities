@@ -1,0 +1,10 @@
+{
+  "profiles": 
+  {
+    "Launcher Test": 
+    {
+      "commandName": "Project",
+      "workingDirectory": "$(ProjectDir)"
+    }
+  }
+}

@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Utilities.Objects;
 using OpenTK.Utilities.Textures;
 
 namespace OpenTK.Utilities.Rasterization;
@@ -9,31 +10,31 @@ public class RasterFrameRender : IDisposable
     private readonly FrameBufferObject frameCapture;
     private readonly RenderBufferObject renderCapture;
     private readonly Texture2D textureCapture;
-    private SizedInternalFormat internalFormat;
+    private TextureFormat format;
     private Size size;
     private TextureFiltering textureFiltering = TextureFiltering.Nearest;
     private Texture2DWrapping textureWrapping = Texture2DWrapping.ClampToEdge;
 
-    public RasterFrameRender(Size initSize, SizedInternalFormat internalFormat = SizedInternalFormat.Rgba16f)
+    public RasterFrameRender(Size initSize, TextureFormat internalFormat = TextureFormat.Rgba16f)
     {
         this.frameCapture = new FrameBufferObject();
         this.renderCapture = new RenderBufferObject();
         this.textureCapture = new Texture2D();
 
-        this.internalFormat = internalFormat;
+        this.format = internalFormat;
         this.Size = initSize;
     }
 
     public ITexture2D FrameResult => this.textureCapture;
 
-    public SizedInternalFormat InternalFormat
+    public TextureFormat InternalFormat
     {
-        get => this.internalFormat;
+        get => this.format;
         set
         {
-            this.internalFormat = value;
+            this.format = value;
 
-            this.textureCapture.ToAllocate(this.internalFormat, this.size.Width, this.size.Height);
+            this.textureCapture.AllocateStorage(this.format, this.size.Width, this.size.Height);
             this.textureCapture.Filtering = this.textureFiltering;
             this.textureCapture.Wrapping = this.textureWrapping;
 
@@ -50,7 +51,7 @@ public class RasterFrameRender : IDisposable
 
             this.renderCapture.Storage(RenderbufferStorage.Depth24Stencil8, this.size.Width, this.size.Height);
 
-            this.textureCapture.ToAllocate(this.internalFormat, this.size.Width, this.size.Height);
+            this.textureCapture.AllocateStorage(this.format, this.size.Width, this.size.Height);
             this.textureCapture.Filtering = this.textureFiltering;
             this.textureCapture.Wrapping = this.textureWrapping;
 

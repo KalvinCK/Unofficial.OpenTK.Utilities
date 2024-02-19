@@ -1,6 +1,6 @@
 ﻿namespace OpenTK.Utilities.Textures;
 
-public enum TextureDimension : int
+public enum TextureDimension
 {
     One,
     Two,
