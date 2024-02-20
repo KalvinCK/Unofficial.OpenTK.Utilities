@@ -49,6 +49,24 @@ public struct Data
     }
 }
 
+public struct Transform
+{
+    public Vector3 Position;
+    public Vector3 Scaling;
+    public Quaternion Orientation;
+
+    public Transform(Vector3 p, Vector3 sc, Quaternion ortt)
+    {
+        Position = p;
+        Scaling = sc;
+        Orientation = ortt;
+    }
+    public override readonly string ToString()
+    {
+        return $"Position: {Position} Scaling: {Scaling} Orientation: {Orientation}";
+    }
+}
+
 public unsafe sealed class App : IDisposable
 {
     private GameWindow Window;
@@ -112,21 +130,60 @@ public unsafe sealed class App : IDisposable
 
         BufferConstant = new BufferConstant<Vector3>();
         BufferConstant.BindBufferBase(BufferRangeTarget.UniformBuffer, 0);
+        BufferConstant.Data = new Vector3(1, 1, 0);
 
-        string gokuImg = "Resources/Goku Ultra Instinct 4K.jpg";
 
-        //var img = Image.FromFile(gokuImg);
+        using var bufferMapped = new BufferMapping<Transform>(5);
+        bufferMapped.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, bindingIndex: 1);
+        // Update index value
+        ref Transform data = ref bufferMapped[2];
+        data.Position = new Vector3(82.0f, 200f, 10f);
+        data.Scaling = new Vector3(2.0f);
+        data.Orientation = Quaternion.Identity;
 
-        var img = Image.FromFile(gokuImg);
+        //foreach( var i in bufferMapped)
+        //{
+        //    Console.WriteLine(i);
+        //}
 
+
+        var bufferMutable = new BufferMutable<Data>(BufferUsageHint.DynamicDraw);
+        bufferMutable.Reserve(50);
+        bufferMutable.ReplaceSubData(new Data[50]);
+
+        bufferMutable.Reserve(10);
+        bufferMutable.ReplaceSubData(new Data[10]);
+        bufferMutable[5] = new Data();
+
+        // Don't keep this, Read the description of this object.
+        MappedRegion<Data> mappedRegion = bufferMutable.GetMapping(2, 8);
+        mappedRegion[0].Pos = new Vector3(100f);
+        mappedRegion[^1].Pos = new Vector3(450f);
+
+        foreach (var i in mappedRegion)
+        {
+            Console.WriteLine(i);
+        }
+        mappedRegion.Dispose();
+
+        Console.WriteLine("\n\n");
+
+        foreach (var i in bufferMutable)
+        {
+            Console.WriteLine(i);
+        }
+
+        bufferMutable.Dispose();
+
+        var img = Image.FromFile("Resources/Goku Ultra Instinct 4K.jpg");
         Texture = new Texture2D(TextureFormat.Srgb8, img.Width, img.Height);
-
         Texture.Update(img.Width, img.Height, PixelFormat.Rgb, PixelType.UnsignedByte, img.Data);
 
         Shader.Uniform(0, Texture.BindlessHandler);
 
-        BufferVertices = new BufferImmutable<Data>(Vertices);
-        BufferElements = new BufferImmutable<uint>(indices);
+        BufferVertices = new BufferImmutable<Data>(Vertices, StorageUseFlag.ClientStorageBit);
+        BufferElements = new BufferImmutable<uint>(indices, StorageUseFlag.ClientStorageBit);
+
 
         VertexArrayObject = new VertexArrayObject();
         VertexArrayObject.SetElementBuffer(BufferElements);
@@ -168,7 +225,7 @@ public unsafe sealed class App : IDisposable
         if(ImGui.Button("SaveScree"))
         {
             using Texture2D screenTex = IFrameBufferObject.Default.ExtractTextureColor<Texture2D>(WinSize);
-            TextureManager.SaveJpg(screenTex, "Resources", "ScreenShoot", 100);
+            TextureManager.SaveJpg(screenTex, filePath: "Resources", fileName: "ScreenShoot", 100);
         }
 
 
@@ -185,11 +242,11 @@ public unsafe sealed class App : IDisposable
     {
         ImGuiBackend.Dispose();
 
-        BufferConstant.Dispose();
+        BufferConstant?.Dispose();
         Texture?.Dispose();
         Shader.Dispose();
         VertexArrayObject.Dispose();
-        BufferVertices.Dispose();
-        BufferElements.Dispose();
+        BufferVertices?.Dispose();
+        BufferElements?.Dispose();
     }
 }

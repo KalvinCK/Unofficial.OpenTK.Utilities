@@ -1,11 +1,10 @@
-﻿using System.Collections;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities.BufferObjects;
 
-public class BufferMutable<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw) : IBufferObject, IEnumerable<T>, IDisposable
+public class BufferMutable<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw) : IBufferObject, IDisposable
     where T : struct
 {
     public BufferMutable(int initialCount, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
@@ -199,7 +198,7 @@ public class BufferMutable<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.
     #endregion
 
     #region Extract
-    public T[] ExtractContents(int index, int size)
+    public T[] ExtractCollection(int index, int size)
     {
         this.CheckHasAllocated();
 
@@ -208,7 +207,7 @@ public class BufferMutable<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.
         return data;
     }
 
-    public T[] ExtractContents() => this.ExtractContents(0, this.Count);
+    public T[] ExtractCollection() => this.ExtractCollection(0, this.Count);
 
     #endregion
 
@@ -230,7 +229,8 @@ public class BufferMutable<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.
     public MappedRegion<T> GetMapping(int index, int size)
     {
         this.CheckHasAllocated();
-        return new MappedRegion<T>(this, index, this.ValidateOffset(index, size));
+        Console.WriteLine(this.ValidateOffset(index, size));
+        return new MappedRegion<T>(this, index, this.ValidateOffset(index, size - 1));
     }
 
     #endregion
@@ -238,12 +238,11 @@ public class BufferMutable<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.
     #region ###
     public IEnumerator<T> GetEnumerator()
     {
-        return (IEnumerator<T>)this.ExtractContents().GetEnumerator();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return this.ExtractContents().GetEnumerator();
+        T[] datas = this.ExtractCollection();
+        foreach (T data in datas)
+        {
+            yield return data;
+        }
     }
 
     public void Invalidate()

@@ -8,9 +8,8 @@ public class BufferConstant<T> : IBufferObject, IDisposable
 {
     private const BufferAccessMask BufferFlags = BufferAccessMask.MapReadBit | BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit;
 
-    public BufferConstant()
+    public BufferConstant(T initData = default)
     {
-        var initData = default(T);
         GL.NamedBufferStorage(this.BufferID, this.Stride, ref initData, (BufferStorageFlags)BufferFlags);
         this.PtrRegion = GL.MapNamedBufferRange(this.BufferID, 0, this.Stride, BufferFlags);
     }

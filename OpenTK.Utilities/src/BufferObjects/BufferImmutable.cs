@@ -1,11 +1,10 @@
-﻿using System.Collections;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities.BufferObjects;
 
-public class BufferImmutable<T>(StorageUseFlag StorageImmutable = StorageUseFlag.DynamicStorageBit) : IBufferObject, IEnumerable<T>, IDisposable
+public class BufferImmutable<T>(StorageUseFlag StorageImmutable = StorageUseFlag.DynamicStorageBit) : IBufferObject, IDisposable
     where T : struct
 {
     private BufferStorageFlags flags = (BufferStorageFlags)StorageImmutable;
@@ -213,7 +212,7 @@ public class BufferImmutable<T>(StorageUseFlag StorageImmutable = StorageUseFlag
         return data;
     }
 
-    public T[] ExtractContents()
+    public T[] ExtractCollection()
     {
         return this.ExtractContents(0, this.Count);
     }
@@ -249,12 +248,11 @@ public class BufferImmutable<T>(StorageUseFlag StorageImmutable = StorageUseFlag
     #region ###
     public IEnumerator<T> GetEnumerator()
     {
-        return (IEnumerator<T>)this.ExtractContents().GetEnumerator();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return this.ExtractContents().GetEnumerator();
+        T[] datas = this.ExtractCollection();
+        foreach (T data in datas)
+        {
+            yield return data;
+        }
     }
 
     public void Invalidate()

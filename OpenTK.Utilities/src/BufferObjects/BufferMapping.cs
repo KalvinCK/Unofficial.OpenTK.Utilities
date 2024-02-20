@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL4;
 
@@ -200,6 +201,16 @@ public class BufferMapping<T> : IBufferObject, IDisposable
     #endregion
 
     #region ###
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        T[] datas = this.ExtractCollection();
+        foreach (T data in datas)
+        {
+            yield return data;
+        }
+    }
+
     public void Invalidate()
     {
         GL.InvalidateBufferData(this.BufferID);

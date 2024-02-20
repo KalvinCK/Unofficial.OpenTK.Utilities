@@ -51,7 +51,7 @@ public struct MappedRegion<T> : IDisposable
 
     public void Dispose()
     {
-        GL.FlushMappedNamedBufferRange(this.bufferID, this.index * this.Stride, this.RegionSize);
+        GL.FlushMappedNamedBufferRange(this.bufferID, 0, this.RegionSize);
         GL.UnmapNamedBuffer(this.bufferID);
         this.bufferID = 0;
         this.PtrRegion = IntPtr.Zero;
@@ -170,6 +170,15 @@ public struct MappedRegion<T> : IDisposable
 
     public readonly T[] ExtractCollection()
         => this.ExtractCollection(0, this.Count);
+
+    public readonly IEnumerator<T> GetEnumerator()
+    {
+        T[] datas = this.ExtractCollection();
+        foreach (T data in datas)
+        {
+            yield return data;
+        }
+    }
     #endregion
 
     #region Valids & Checks
