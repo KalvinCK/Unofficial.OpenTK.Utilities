@@ -8,11 +8,14 @@ public class ShaderCompilerException(ShaderType shaderType, string info)
 public class ShaderProgramException(string info)
     : Exception($"Failed to create shader program.\nInfo: {info}.") { }
 
+public class ShaderSeparableExeption()
+    : Exception($"To define a shader in the pipeline it must be created as 'separable'.") { }
+
 public class AttributeNotFoundException(string Attrname)
-    : Exception($"Attribute: {Attrname} not found.") { }
+    : Exception($"Attribute: '{Attrname}' not found.") { }
 
 public class UniformNotFoundException(string uniName)
-    : Exception($"Uniform: {uniName} not found.") { }
+    : Exception($"Uniform: '{uniName}' not found.") { }
 
 public class UnallocatedBufferException(string? message = null)
     : Exception(message ?? "The buffer was not allocated.") { }

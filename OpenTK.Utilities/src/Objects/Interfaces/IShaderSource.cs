@@ -2,9 +2,7 @@
 
 namespace OpenTK.Utilities.Objects;
 
-public interface IShaderCompiled : IBuffer
+public interface IShaderSource : IBuffer
 {
     public ShaderType Type { get; }
-
-    public string Name { get; }
 }

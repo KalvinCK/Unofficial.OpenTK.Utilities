@@ -14,6 +14,9 @@ using System.Drawing;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Data.Common;
+using OpenTK.Utilities;
+using System.Text.RegularExpressions;
+using System;
 
 namespace Test;
 
@@ -55,6 +58,18 @@ public struct Transform
     public Vector3 Scaling;
     public Quaternion Orientation;
 
+    public readonly Matrix4x4 ModelMatrix
+    {
+        get
+        {
+            Matrix4x4 RotationMatrix = Matrix4x4.CreateFromQuaternion(Orientation);
+            Matrix4x4 MatrixScale = Matrix4x4.CreateScale(Scaling);
+            Matrix4x4 MatrixTranslation = Matrix4x4.CreateTranslation(Position);
+
+            return MatrixScale * RotationMatrix * MatrixTranslation;
+        }
+    }
+
     public Transform(Vector3 p, Vector3 sc, Quaternion ortt)
     {
         Position = p;
@@ -69,16 +84,23 @@ public struct Transform
 
 public unsafe sealed class App : IDisposable
 {
+
     private GameWindow Window;
     private Size WinSize;
 
     private ImGuiBackend ImGuiBackend;
-    private Shader Shader;
-    private Texture2D Texture;
     private BufferConstant<Vector3> BufferConstant;
     private VertexArrayObject VertexArrayObject;
     private BufferImmutable<Data> BufferVertices;
     private BufferImmutable<uint> BufferElements;
+    private Texture2D Texture;
+
+    private Pipeline Pipeline;
+    private Shader ShaderProgVert;
+    private Shader ShaderProgFrag;
+
+    private Shader ShaderSample;
+
     public unsafe App(GameWindow window)
     {
         Window = window;
@@ -96,17 +118,7 @@ public unsafe sealed class App : IDisposable
         GL.Enable(EnableCap.Blend);
         GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-        GL.Enable(EnableCap.DebugOutput);
-        GL.Enable(EnableCap.DebugOutputSynchronous);
-        GL.DebugMessageCallback((DebugSource source, DebugType type, int id, DebugSeverity severity, int length, IntPtr message, IntPtr userParam) =>
-        {
-            if (id is 131169 || id is 131185 || id is 131218 || id is 131204)
-                return;
-
-            string printMsgWarning = $"ID: {id}\nSeverity: {severity}\nType: {type}\nMessage: {Marshal.PtrToStringAnsi(message, length)}\n";
-            Console.WriteLine(printMsgWarning);
-
-        }, IntPtr.Zero);
+        ContextGL.EnableDebug = true;
 
         ImGuiBackend = new ImGuiBackend(new Size(window.Size.X, window.Size.Y));
 
@@ -124,66 +136,40 @@ public unsafe sealed class App : IDisposable
             1, 2, 3
         ];
 
-        Shader = new Shader(
-            ShaderCompiled.CompileFromFileVertex("Resources/Vertex.vert"),
-            ShaderCompiled.CompileFromFileFragment("Resources/Fragment.frag"));
-
-        BufferConstant = new BufferConstant<Vector3>();
-        BufferConstant.BindBufferBase(BufferRangeTarget.UniformBuffer, 0);
-        BufferConstant.Data = new Vector3(1, 1, 0);
 
 
-        using var bufferMapped = new BufferMapping<Transform>(5);
-        bufferMapped.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, bindingIndex: 1);
-        // Update index value
-        ref Transform data = ref bufferMapped[2];
-        data.Position = new Vector3(82.0f, 200f, 10f);
-        data.Scaling = new Vector3(2.0f);
-        data.Orientation = Quaternion.Identity;
-
-        //foreach( var i in bufferMapped)
-        //{
-        //    Console.WriteLine(i);
-        //}
+        // shaders programs
 
 
-        var bufferMutable = new BufferMutable<Data>(BufferUsageHint.DynamicDraw);
-        bufferMutable.Reserve(50);
-        bufferMutable.ReplaceSubData(new Data[50]);
+        // Note that it must be created in a separable way.
+        ShaderProgVert = Shader.CreateProgramSeparable(
+            ShaderSource.FromFile(ShaderType.VertexShader, "Resources/Vertex.vert"));
 
-        bufferMutable.Reserve(10);
-        bufferMutable.ReplaceSubData(new Data[10]);
-        bufferMutable[5] = new Data();
+        ShaderProgFrag = Shader.CreateProgramSeparable(
+            ShaderSource.FromFile(ShaderType.FragmentShader, "Resources/Fragment.frag"));
 
-        // Don't keep this, Read the description of this object.
-        MappedRegion<Data> mappedRegion = bufferMutable.GetMapping(2, 8);
-        mappedRegion[0].Pos = new Vector3(100f);
-        mappedRegion[^1].Pos = new Vector3(450f);
+        Pipeline = new Pipeline();
+        Pipeline.SetShader(ShaderProgVert, ShaderProgFrag);
 
-        foreach (var i in mappedRegion)
-        {
-            Console.WriteLine(i);
-        }
-        mappedRegion.Dispose();
 
-        Console.WriteLine("\n\n");
+        ShaderSample = Shader.CreateProgram(
+            ShaderSource.FromFile(ShaderType.VertexShader, "Resources/Vertex.vert"),
+            ShaderSource.FromFile(ShaderType.FragmentShader, "Resources/Fragment.frag"));
 
-        foreach (var i in bufferMutable)
-        {
-            Console.WriteLine(i);
-        }
+        Pipeline = new Pipeline();
+        Pipeline.SetShader(ShaderSample);
+        Pipeline.SetShaderAllStages(ShaderSample);
 
-        bufferMutable.Dispose();
 
         var img = Image.FromFile("Resources/Goku Ultra Instinct 4K.jpg");
         Texture = new Texture2D(TextureFormat.Srgb8, img.Width, img.Height);
         Texture.Update(img.Width, img.Height, PixelFormat.Rgb, PixelType.UnsignedByte, img.Data);
+        ShaderProgFrag.Uniform(0, Texture.BindlessHandler);
 
-        Shader.Uniform(0, Texture.BindlessHandler);
+
 
         BufferVertices = new BufferImmutable<Data>(Vertices, StorageUseFlag.ClientStorageBit);
         BufferElements = new BufferImmutable<uint>(indices, StorageUseFlag.ClientStorageBit);
-
 
         VertexArrayObject = new VertexArrayObject();
         VertexArrayObject.SetElementBuffer(BufferElements);
@@ -192,6 +178,12 @@ public unsafe sealed class App : IDisposable
         VertexArrayObject.SetAttribFormat(0, 0, 3, VertexAttribType.Float, (int)Marshal.OffsetOf<Data>("Pos"));
         VertexArrayObject.SetAttribFormat(0, 1, 2, VertexAttribType.Float, (int)Marshal.OffsetOf<Data>("TexCoord"));
         VertexArrayObject.SetAttribFormat(0, 2, 4, VertexAttribType.Float, (int)Marshal.OffsetOf<Data>("Color"));
+
+        BufferConstant = new BufferConstant<Vector3>();
+        BufferConstant.BindBufferBase(BufferRangeTarget.UniformBuffer, 0);
+        BufferConstant.Data = new Vector3(1, 1, 1);
+
+
     }
 
     private Vector3 color1 = Vector3.One;
@@ -207,26 +199,25 @@ public unsafe sealed class App : IDisposable
 
         ImGui.Begin("Main");
         {
-            if(ImGui.ColorEdit3("Interp color", ref color1))
+            if (ImGui.ColorEdit3("Interp color", ref color1))
             {
                 BufferConstant.Data = color1;
+                //ShaderProg.Uniform(100, 100);
             }
 
+
         }
-
-
         ImGui.End();
 
-        Shader.Use();
-        VertexArrayObject.Bind();
 
+
+        Pipeline.Bind();
+
+        ShaderSample.Use();
+        VertexArrayObject.Bind();
         GL.DrawElements(PrimitiveType.Triangles, BufferElements.Count, DrawElementsType.UnsignedInt, 0);
 
-        if(ImGui.Button("SaveScree"))
-        {
-            using Texture2D screenTex = IFrameBufferObject.Default.ExtractTextureColor<Texture2D>(WinSize);
-            TextureManager.SaveJpg(screenTex, filePath: "Resources", fileName: "ScreenShoot", 100);
-        }
+       
 
 
         GL.Disable(EnableCap.DepthTest);
@@ -240,13 +231,43 @@ public unsafe sealed class App : IDisposable
     }
     public void Dispose()
     {
+        Texture?.Dispose();
+
+        Pipeline?.Dispose();
+        ShaderProgVert?.Dispose();
+        ShaderProgFrag?.Dispose();
+
         ImGuiBackend.Dispose();
 
-        BufferConstant?.Dispose();
-        Texture?.Dispose();
-        Shader.Dispose();
+        BufferConstant.Dispose();
         VertexArrayObject.Dispose();
-        BufferVertices?.Dispose();
-        BufferElements?.Dispose();
+        BufferVertices.Dispose();
+        BufferElements.Dispose();
+    }
+
+    static void RemoverComentariosArquivo(string caminhoArquivo)
+    {
+        // Ler todo o conteúdo do arquivo para uma string
+        string conteudo = File.ReadAllText(caminhoArquivo);
+
+        // Remover comentários do conteúdo
+        string conteudoSemComentarios = RemoverComentarios(conteudo);
+
+        // Escrever o conteúdo sem comentários de volta para o mesmo arquivo
+        File.WriteAllText(caminhoArquivo, conteudoSemComentarios);
+    }
+
+    static string RemoverComentarios(string texto)
+    {
+        // Remove comentários de linha (//) usando expressão regular
+        texto = Regex.Replace(texto, @"//[^\r\n]*", "");
+
+        // Remove comentários de bloco (/* */)
+        texto = Regex.Replace(texto, @"/\*(.*?)\*/", "", RegexOptions.Singleline);
+
+        // Remove linhas vazias
+        texto = Regex.Replace(texto, @"^\s*$\n|\r", "", RegexOptions.Multiline);
+
+        return texto;
     }
 }

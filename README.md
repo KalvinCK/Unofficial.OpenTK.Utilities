@@ -17,7 +17,7 @@ To use this library in your project, you can clone the repository directly to yo
 Currently, there is no package available in the form of a pre-packaged distribution file (such as a NuGet package), but this may be provided in the future. Referencing the cloned project is a convenient way to start using the library while waiting for a formal distribution.
 
 ### Usage Examples
-
+___
 ###### Vertexs Arrays
 ```csharp
 BufferVertices = new BufferImmutable<Data>(Vertices, StorageUseFlag.ClientStorageBit);
@@ -31,6 +31,7 @@ VertexArrayObject.SetAttribFormat(0, 0, 3, VertexAttribType.Float, (int)Marshal.
 VertexArrayObject.SetAttribFormat(0, 1, 2, VertexAttribType.Float, (int)Marshal.OffsetOf<Data>("TexCoord"));
 VertexArrayObject.SetAttribFormat(0, 2, 4, VertexAttribType.Float, (int)Marshal.OffsetOf<Data>("Color"));
 ```
+___
 ###### Buffers
 ```csharp
 var bufferConstant = new BufferConstant<Vector3>();
@@ -86,8 +87,6 @@ foreach (var i in mappedRegion)
 mappedRegion.Dispose();
 //-------------------------
 
-
-Console.WriteLine("\n");  
 foreach (var i in bufferMutable)
 {
     Console.WriteLine(i);
@@ -106,13 +105,72 @@ foreach (var i in bufferMutable)
 
 bufferMutable.Dispose();
 ```
+___
+###### Shaders
+**warning:** Just to remember, I decided to call 'GLShaderProgram' just Shader.
 
+Using the Traditional way
+```csharp
+ShaderSample = Shader.CreateProgram(
+    ShaderLoader.FromFile(ShaderType.VertexShader, "Resources/Vertex.vert"),
+    ShaderLoader.FromFile(ShaderType.FragmentShader, "Resources/Fragment.frag"))
+{
+    EnableExceptions = true,
+};
+
+ShaderSample.Uniform("Model", transform.ModelMatrix);
+//Exception: OpenTK.Utilities.UniformNotFoundException: 'Uniform: 'Model' not found.'
+
+VertexArrayObject.SetAttribFormat(0, ShaderSample.GetAttribute("insPos"), 3, VertexAttribType.Float, (int)Marshal.OffsetOf<Data>("Pos"));
+// Exception: OpenTK.Utilities.AttributeNotFoundException: 'Attribute: 'insPos' not found.'
+
+// Draw
+ShaderSample.Use();
+VertexArrayObject.Bind();
+GL.DrawElements(PrimitiveType.Triangles, BufferElements.Count, DrawElementsType.UnsignedInt, 0);
+```
+Combined with pipeline object
+```csharp
+// Note that it must be created in a separable way.
+ShaderProgVert = Shader.CreateProgramSeparable(
+    ShaderSource.FromFile(ShaderType.VertexShader, "Resources/Vertex.vert"));
+
+ShaderProgFrag = Shader.CreateProgramSeparable(
+    ShaderSource.FromFile(ShaderType.FragmentShader, "Resources/Fragment.frag"));
+
+Pipeline = new Pipeline();
+Pipeline.SetShader(ShaderProgVert, ShaderProgFrag);
+```
+It could be
+```csharp
+ShaderSample = Shader.CreateProgram(
+    ShaderSource.FromFile(ShaderType.VertexShader, "Resources/Vertex.vert"),
+    ShaderSource.FromFile(ShaderType.FragmentShader, "Resources/Fragment.frag"));
+
+Pipeline = new Pipeline();
+
+Pipeline.SetShader(ShaderSample);
+// or
+Pipeline.SetShaderAllStages(ShaderSample);
+
+// Draw
+Pipeline.bind();
+VertexArrayObject.Bind();
+GL.DrawElements(PrimitiveType.Triangles, BufferElements.Count, DrawElementsType.UnsignedInt, 0);
+```
+___
 ##### Texture 
 Load
 ```csharp
- var img = Image.FromFile("Resources/Goku Ultra Instinct 4K.jpg");
- Texture = new Texture2D(TextureFormat.Srgb8, img.Width, img.Height);
- Texture.Update(img.Width, img.Height, PixelFormat.Rgb, PixelType.UnsignedByte, img.Data);
+var img = Image.FromFile("Resources/Goku Ultra Instinct 4K.jpg");
+Texture = new Texture2D(TextureFormat.Srgb8, img.Width, img.Height);
+Texture.Update(img.Width, img.Height, PixelFormat.Rgb, PixelType.UnsignedByte, img.Data);
+```
+
+**For more information see:** [khronos docs](https://www.khronos.org/opengl/wiki/Bindless_Texture)
+```csharp
+// Use of extension 'GL_ARB_bindless_texture'.
+ShaderSample.Uniform(0, Texture.BindlessHandler);
 ```
 
 Save
@@ -124,6 +182,8 @@ if(ImGui.Button("SaveScreen"))
 }
 ```
 <image src="Test/Resources/ScreenShoot.jpg" alt="Screen capture">
+
+___
 
 #### Contribution
 Contributions are welcome! There's still a lot to do and review, I've only tested a few features, feel free to report issues, suggest improvements, or send pull requests for this project.

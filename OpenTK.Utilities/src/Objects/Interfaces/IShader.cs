@@ -8,9 +8,11 @@ public interface IShader : IBuffer
 {
     public static int BufferBindedInContext { get; internal set; }
 
-    public ReadOnlyDictionary<string, int> UniformsLocations { get; }
+    public ReadOnlyDictionary<string, int> ActivesUniforms { get; }
 
-    public int UniformsCount { get; }
+    public IReadOnlyList<ShaderType> Composion { get; }
+
+    public bool Separable { get; }
 
     public void Use();
 

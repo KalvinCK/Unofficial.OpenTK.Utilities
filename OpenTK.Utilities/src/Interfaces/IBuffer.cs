@@ -6,3 +6,8 @@ public interface IBuffer
 
     public int BufferID { get; }
 }
+
+public readonly struct BufferRef(int bufferID) : IBuffer
+{
+    public int BufferID { get; } = bufferID;
+}

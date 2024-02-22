@@ -8,19 +8,57 @@ namespace OpenTK.Utilities.Objects;
 
 public class Shader : IShader, IDisposable
 {
-    public Shader(params ShaderCompiled[] shadersCompileds)
+    public Shader(params IShaderSource[] shaders)
     {
-        this.BufferID = Create(true, shadersCompileds);
-        this.UniformsLocations = ProcessUniforms(this.BufferID);
+        this.BufferID = Create(false, shaders);
+        this.Composion = shaders.Select(i => i.Type).ToList();
+        this.ActivesUniforms = ProcessUniforms(this.BufferID);
+        this.ActivesAttributes = ProcessAttributes(this.BufferID);
+        this.Separable = false;
     }
 
+    public Shader(bool separable, params IShaderSource[] shaders)
+    {
+        this.BufferID = Create(separable, shaders);
+        this.Composion = shaders.Select(i => i.Type).ToList();
+        this.ActivesUniforms = ProcessUniforms(this.BufferID);
+        this.ActivesAttributes = ProcessAttributes(this.BufferID);
+        this.Separable = separable;
+    }
+
+    private Shader(int programID, List<ShaderType> composion, bool separable)
+    {
+        this.BufferID = programID;
+        this.Composion = composion;
+        this.Separable = separable;
+        this.ActivesUniforms = ProcessUniforms(this.BufferID);
+        this.ActivesAttributes = ProcessAttributes(this.BufferID);
+    }
+
+    #region Props
     public int BufferID { get; private set; }
 
-    public ReadOnlyDictionary<string, int> UniformsLocations { get; private set; }
+    public ReadOnlyDictionary<string, int> ActivesUniforms { get; private set; }
 
-    public int UniformsCount => this.UniformsLocations.Count;
+    public ReadOnlyDictionary<string, int> ActivesAttributes { get; private set; }
 
-    public string Name { get; set; } = IBuffer.Unnamed;
+    public IReadOnlyList<ShaderType> Composion { get; private set; }
+
+    public bool Separable { get; private set; }
+
+    public string Label
+    {
+        get
+        {
+            GL.GetObjectLabel(ObjectLabelIdentifier.Program, this.BufferID, 64, out int _, out string label);
+            return label;
+        }
+
+        set
+        {
+            GL.ObjectLabel(ObjectLabelIdentifier.Program, this.BufferID, value.Length, value);
+        }
+    }
 
     /// <summary>
     /// Gets or sets a value indicating whether to stop the program when
@@ -28,28 +66,46 @@ public class Shader : IShader, IDisposable
     /// </summary>
     public bool EnableExceptions { get; set; }
 
+    #endregion
+
+    public static Shader CreateProgram(params IShaderSource[] shaders)
+    {
+        return new Shader(Create(false, shaders), shaders.Select(i => i.Type).ToList(), false);
+    }
+
+    public static Shader CreateProgramSeparable(params IShaderSource[] shaders)
+    {
+        return new Shader(Create(true, shaders), shaders.Select(i => i.Type).ToList(), true);
+    }
+
+    #region Gets
     public bool ContainsUniform(string name)
     {
-        return this.UniformsLocations.ContainsKey(name);
+        return this.ActivesUniforms.ContainsKey(name);
+    }
+
+    public bool ContainsAttribute(string name)
+    {
+        return this.ActivesAttributes.ContainsKey(name);
     }
 
     public int GetAttribute(string name)
     {
-        int attrib = GL.GetAttribLocation(this.BufferID, name);
+        bool result = this.ActivesAttributes.TryGetValue(name, out int value);
 
-        if (attrib == -1 && this.EnableExceptions)
+        if (!result && this.EnableExceptions)
         {
             throw new AttributeNotFoundException(name);
         }
 
-        return attrib;
+        return result ? value : -1;
     }
 
     public int GetUniformLocation(string name)
     {
-        bool result = this.UniformsLocations.TryGetValue(name, out int value);
+        bool result = this.ActivesUniforms.TryGetValue(name, out int value);
 
-        if (result && this.EnableExceptions)
+        if (!result && this.EnableExceptions)
         {
             throw new UniformNotFoundException(name);
         }
@@ -57,21 +113,33 @@ public class Shader : IShader, IDisposable
         return result ? value : -1;
     }
 
+    public int ValidateUniformLocation(int uniformLocation)
+    {
+        if (this.ActivesUniforms.Values.ToList().IndexOf(uniformLocation) == -1 && this.EnableExceptions)
+        {
+            throw new UniformNotFoundException($"in location: '{uniformLocation}'");
+        }
+
+        return uniformLocation;
+    }
+
+    #endregion
+
     #region Uploads
     public void Uniform(int location, int data, int count = 1)
-        => GL.ProgramUniform1(this.BufferID, location, count, ref data);
+        => GL.ProgramUniform1(this.BufferID, this.ValidateUniformLocation(location), count, ref data);
 
     public void Uniform(int location, uint data, int count = 1)
         => GL.ProgramUniform1((uint)this.BufferID, location, count, ref data);
 
     public void Uniform(int location, float data, int count = 1)
-        => GL.ProgramUniform1(this.BufferID, location, count, ref data);
+        => GL.ProgramUniform1(this.BufferID, this.ValidateUniformLocation(location), count, ref data);
 
     public void Uniform(int location, double data, int count = 1)
-        => GL.ProgramUniform1(this.BufferID, location, count, ref data);
+        => GL.ProgramUniform1(this.BufferID, this.ValidateUniformLocation(location), count, ref data);
 
     public void Uniform(int location, long data, int count = 1)
-        => GL.Arb.ProgramUniformHandle(this.BufferID, location, count, ref data);
+        => GL.Arb.ProgramUniformHandle(this.BufferID, this.ValidateUniformLocation(location), count, ref data);
 
     public void Uniform(int location, bool data)
         => this.Uniform(location, data ? 1 : 0);
@@ -133,7 +201,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (int* ptr = &data.X)
         {
-            GL.ProgramUniform2(this.BufferID, location, count, ptr);
+            GL.ProgramUniform2(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -141,7 +209,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (int* ptr = &data.X)
         {
-            GL.ProgramUniform3(this.BufferID, location, count, ptr);
+            GL.ProgramUniform3(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -149,7 +217,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (int* ptr = &data.X)
         {
-            GL.ProgramUniform4(this.BufferID, location, count, ptr);
+            GL.ProgramUniform4(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -169,7 +237,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.X)
         {
-            GL.ProgramUniform2(this.BufferID, location, count, ptr);
+            GL.ProgramUniform2(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -177,7 +245,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.X)
         {
-            GL.ProgramUniform3(this.BufferID, location, count, ptr);
+            GL.ProgramUniform3(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -185,7 +253,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.X)
         {
-            GL.ProgramUniform4(this.BufferID, location, count, ptr);
+            GL.ProgramUniform4(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -193,7 +261,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.W)
         {
-            GL.ProgramUniform4(this.BufferID, location, count, ptr);
+            GL.ProgramUniform4(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -201,7 +269,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix2(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix2(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -209,7 +277,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix2x3(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix2x3(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -217,7 +285,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix2x4(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix2x4(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -225,7 +293,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix3(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix3(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -233,7 +301,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix3x2(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix3x2(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -241,7 +309,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix3x4(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix3x4(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -249,7 +317,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix4(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix4(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -257,7 +325,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix4x2(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix4x2(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -265,7 +333,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix4x3(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix4x3(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -314,7 +382,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.X)
         {
-            GL.ProgramUniform2(this.BufferID, location, count, ptr);
+            GL.ProgramUniform2(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -322,7 +390,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.X)
         {
-            GL.ProgramUniform3(this.BufferID, location, count, ptr);
+            GL.ProgramUniform3(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -330,7 +398,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.X)
         {
-            GL.ProgramUniform4(this.BufferID, location, count, ptr);
+            GL.ProgramUniform4(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -338,7 +406,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.W)
         {
-            GL.ProgramUniform4(this.BufferID, location, count, ptr);
+            GL.ProgramUniform4(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -346,7 +414,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix2(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix2(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -354,7 +422,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix2x3(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix2x3(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -362,7 +430,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix2x4(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix2x4(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -370,7 +438,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix3(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix3(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -378,7 +446,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix3x2(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix3x2(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -386,7 +454,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix3x4(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix3x4(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -394,7 +462,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix4(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix4(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -402,7 +470,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix4x2(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix4x2(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -410,7 +478,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (double* ptr = &data.Row0.X)
         {
-            GL.ProgramUniformMatrix4x3(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix4x3(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -461,7 +529,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.X)
         {
-            GL.ProgramUniform2(this.BufferID, location, count, ptr);
+            GL.ProgramUniform2(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -469,7 +537,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.X)
         {
-            GL.ProgramUniform3(this.BufferID, location, count, ptr);
+            GL.ProgramUniform3(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -477,7 +545,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.X)
         {
-            GL.ProgramUniform4(this.BufferID, location, count, ptr);
+            GL.ProgramUniform4(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -485,7 +553,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.X)
         {
-            GL.ProgramUniform4(this.BufferID, location, count, ptr);
+            GL.ProgramUniform4(this.BufferID, this.ValidateUniformLocation(location), count, ptr);
         }
     }
 
@@ -493,7 +561,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.M11)
         {
-            GL.ProgramUniformMatrix3x2(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix3x2(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -501,7 +569,7 @@ public class Shader : IShader, IDisposable
     {
         fixed (float* ptr = &data.M11)
         {
-            GL.ProgramUniformMatrix4(this.BufferID, location, count, transpose, ptr);
+            GL.ProgramUniformMatrix4(this.BufferID, this.ValidateUniformLocation(location), count, transpose, ptr);
         }
     }
 
@@ -526,7 +594,12 @@ public class Shader : IShader, IDisposable
 
     #endregion
 
-    #region Ctx
+    #region ###
+    public override string ToString()
+    {
+        return $"Label: {(string.IsNullOrEmpty(this.Label) ? @"''" : this.Label)} Composion: {this.Composion.Count} Uniforms: {this.ActivesUniforms.Count} Attributes: {this.ActivesAttributes.Count}";
+    }
+
     public void Use()
     {
         GL.UseProgram(this.BufferID);
@@ -596,37 +669,42 @@ public class Shader : IShader, IDisposable
     {
         if (disposing)
         {
+            this.Label = " ";
             GL.DeleteProgram(this.BufferID);
             this.BufferID = 0;
-            this.Name = " ";
-            this.UniformsLocations = new (new Dictionary<string, int>());
+            this.ActivesUniforms = new (new Dictionary<string, int>());
+            this.ActivesAttributes = new (new Dictionary<string, int>());
+            this.Separable = false;
+            this.Composion = [];
         }
     }
     #endregion
 
-    #region Create
-    private static int Create(bool DeleteCompildedShader, params ShaderCompiled[] shadersCompileds)
+    #region Create & Proccess
+    private static int Create(bool separable, params IShaderSource[] shadersSource)
     {
         int programID = GL.CreateProgram();
 
-        foreach (var compiled in shadersCompileds)
+        if (separable is true)
         {
-            GL.AttachShader(programID, compiled.BufferID);
+            GL.ProgramParameter(programID, ProgramParameterName.ProgramSeparable, 1);
+        }
+
+        foreach (var loaders in shadersSource)
+        {
+            GL.AttachShader(programID, loaders.BufferID);
         }
 
         GL.LinkProgram(programID);
 
-        foreach (var compiled in shadersCompileds)
+        if (separable is false)
         {
-            GL.DetachShader(programID, compiled.BufferID);
-
-            if (DeleteCompildedShader)
+            foreach (var loaders in shadersSource)
             {
-                compiled.Dispose();
+                GL.DetachShader(programID, loaders.BufferID);
+                GL.DeleteShader(loaders.BufferID);
             }
         }
-
-        Array.Clear(shadersCompileds);
 
         GL.GetProgram(programID, GetProgramParameterName.LinkStatus, out var code);
         if (code != (int)All.True)
@@ -634,10 +712,24 @@ public class Shader : IShader, IDisposable
             var programInfo = GL.GetProgramInfoLog(programID);
             GL.DeleteProgram(programID);
 
-            throw new Exception($"Failed to create shader program.\nInfo: {programInfo}.");
+            throw new ShaderProgramException(programInfo);
         }
 
         return programID;
+    }
+
+    private static ReadOnlyDictionary<string, int> ProcessAttributes(in int programID)
+    {
+        var attrbsLocations = new Dictionary<string, int> { };
+        GL.GetProgram(programID, GetProgramParameterName.ActiveAttributes, out var numberOfAttribs);
+
+        for (var i = 0; i < numberOfAttribs; i++)
+        {
+            string key = GL.GetActiveAttrib(programID, i, out var _, out var _);
+            attrbsLocations.Add(key, GL.GetAttribLocation(programID, key));
+        }
+
+        return new ReadOnlyDictionary<string, int>(attrbsLocations);
     }
 
     private static ReadOnlyDictionary<string, int> ProcessUniforms(in int programID)
@@ -669,4 +761,5 @@ public class Shader : IShader, IDisposable
         return new ReadOnlyDictionary<string, int>(uniLocations);
     }
     #endregion
+
 }

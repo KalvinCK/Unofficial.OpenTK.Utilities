@@ -16,7 +16,7 @@ public class ImGuiBackend : IDisposable
 {
     public bool IsIgnoreMouseInput { get; set; } = false;
 
-    private readonly Shader Shader;
+    private readonly Shader ShaderProg;
     private readonly Texture2D FontTexture;
     private readonly VertexArrayObject Vao;
     private readonly BufferUnstructured VertBuffer;
@@ -33,7 +33,7 @@ public class ImGuiBackend : IDisposable
         set
         {
             _Gamma = value;
-            Shader.Uniform(1, Gamma);
+            ShaderProg.Uniform(1, Gamma);
         }
     }
 
@@ -51,7 +51,7 @@ public class ImGuiBackend : IDisposable
             io.DisplayFramebufferScale = scaleFactor;
 
             var projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, io.DisplaySize.X, io.DisplaySize.Y, 0.0f, -1.0f, 1.0f);
-            Shader.Uniform(0, projection);
+            ShaderProg.Uniform(0, projection);
         }
     }
 
@@ -110,9 +110,10 @@ public class ImGuiBackend : IDisposable
             }";
         #endregion
 
-        Shader = new Shader(
-            ShaderCompiled.CompileFromText(ShaderType.VertexShader, vertexSource, "imgui"),
-            ShaderCompiled.CompileFromText(ShaderType.FragmentShader, fragmentSource, "imgui"));
+        ShaderProg = Shader.CreateProgram(
+            ShaderSource.FromText(ShaderType.VertexShader, vertexSource),
+            ShaderSource.FromText(ShaderType.FragmentShader, fragmentSource));
+
 
         io.Fonts.GetTexDataAsRGBA32(out IntPtr pixels, out int width, out int height, out _);
 
@@ -269,7 +270,7 @@ public class ImGuiBackend : IDisposable
         }
 
         
-        Shader.Use();
+        ShaderProg.Use();
         Vao.Bind();
 
         ImGuiIOPtr io = ImGui.GetIO();
@@ -307,6 +308,7 @@ public class ImGuiBackend : IDisposable
             }
         }
 
+        IShader.ClearContext();
 
     }
 
@@ -383,7 +385,7 @@ public class ImGuiBackend : IDisposable
     public void Dispose()
     {
         FontTexture.Dispose();
-        Shader.Dispose();
+        ShaderProg.Dispose();
         Vao.Dispose();
         VertBuffer.Dispose();
         ElemBuffer.Dispose();

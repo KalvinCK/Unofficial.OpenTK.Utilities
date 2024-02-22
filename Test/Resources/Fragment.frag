@@ -1,5 +1,5 @@
 #version 460
-#extension GL_ARB_bindless_texture : require
+#extension GL_ARB_bindless_texture : enable
 
 layout(location = 0) out vec4 FragColor;
 
@@ -17,4 +17,5 @@ void main()
 {
 	FragColor = texture(BaseTexture, OutTex);
 	FragColor.rgb *= InterpColor;
+	//FragColor = vec4(InterpColor, 1.0);
 }
