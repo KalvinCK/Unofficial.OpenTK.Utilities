@@ -9,7 +9,7 @@ namespace OpenTK.Utilities.BufferObjects;
 /// Represents the all mapping region of a buffer for read and write operations.
 /// </summary>
 /// <typeparam name="T">The type of data.</typeparam>
-public class BufferMapping<T> : IBufferObject, IDisposable
+public class BufferMapping<T> : IReadOnlyBufferObject, IDisposable
     where T : struct
 {
     private const BufferAccessMask AccessFlags = BufferAccessMask.MapReadBit | BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit;
@@ -255,7 +255,7 @@ public class BufferMapping<T> : IBufferObject, IDisposable
     #region Valids & Checks
     private void ConfigureBuffer(T[] bufferDatas)
     {
-        this.BufferID = IBufferObject.CreateBuffer();
+        this.BufferID = IReadOnlyBufferObject.CreateBuffer();
         this.count = bufferDatas.Length;
         GL.NamedBufferStorage(this.BufferID, this.MemorySize, bufferDatas, (BufferStorageFlags)AccessFlags);
         this.PtrRegion = GL.MapNamedBufferRange(this.BufferID, 0, this.MemorySize, AccessFlags);

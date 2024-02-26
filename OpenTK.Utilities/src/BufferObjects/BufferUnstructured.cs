@@ -5,22 +5,22 @@ namespace OpenTK.Utilities.BufferObjects;
 /// <summary>
 /// An insecure buffer very different from the others.
 /// </summary>
-public class BufferUnstructured : IBuffer, IDisposable
+public class BufferUnstructured : IReadOnlyBuffer, IDisposable
 {
-    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
+    public int BufferID { get; private set; } = IReadOnlyBufferObject.CreateBuffer();
 
-    public int MemoryBytesSize { get; protected set; }
+    public int MemorySize { get; protected set; }
 
     public void ReserveMutableMemory(int bytesSize, IntPtr Data, BufferStorageFlags BufferStorageFlags = BufferStorageFlags.DynamicStorageBit)
     {
-        this.MemoryBytesSize = bytesSize;
-        GL.NamedBufferStorage(this.BufferID, this.MemoryBytesSize, Data, BufferStorageFlags);
+        this.MemorySize = bytesSize;
+        GL.NamedBufferStorage(this.BufferID, this.MemorySize, Data, BufferStorageFlags);
     }
 
     public void ReserveImmutableMemory(int bytesSize, IntPtr Data, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
     {
-        this.MemoryBytesSize = bytesSize;
-        GL.NamedBufferData(this.BufferID, this.MemoryBytesSize, Data, BufferUsageHint);
+        this.MemorySize = bytesSize;
+        GL.NamedBufferData(this.BufferID, this.MemorySize, Data, BufferUsageHint);
     }
 
     public unsafe void UpdateMemory(int bytesOffset, int bytesSize, IntPtr DataPointer)
@@ -76,7 +76,7 @@ public class BufferUnstructured : IBuffer, IDisposable
     }
 
     public void Copy<TBuffer>(TBuffer writerBuffer, int readOffsetInBytes, int writeOffsetInBytes, int bytesSize)
-        where TBuffer : IBuffer
+        where TBuffer : IReadOnlyBuffer
     {
         GL.CopyNamedBufferSubData(this.BufferID, writerBuffer.BufferID, readOffsetInBytes, writeOffsetInBytes, bytesSize);
     }
@@ -108,7 +108,7 @@ public class BufferUnstructured : IBuffer, IDisposable
         {
             GL.DeleteBuffer(this.BufferID);
             this.BufferID = 0;
-            this.MemoryBytesSize = 0;
+            this.MemorySize = 0;
         }
     }
 }

@@ -2,11 +2,11 @@
 
 namespace OpenTK.Utilities.Textures;
 
-public class SamplerObject : ISamplerObject, IDisposable
+public class SamplerObject : IReadOnlySamplerObject, IDisposable
 {
     public SamplerObject()
     {
-        this.BufferID = ISamplerObject.CreateBuffer();
+        this.BufferID = IReadOnlySamplerObject.CreateBuffer();
     }
 
     public int BufferID { get; private set; }
@@ -78,7 +78,7 @@ public class SamplerObject : ISamplerObject, IDisposable
     /// <typeparam name="TTexture">texture object.</typeparam>
     /// <param name="texture">texture to attach.</param>
     public void AttachTexture<TTexture>(TTexture texture)
-        where TTexture : ITexture
+        where TTexture : IReadOnlyTexture
     {
         this.BindlessHandler = GL.Arb.GetTextureSamplerHandle(texture.BufferID, this.BufferID);
         GL.Arb.MakeTextureHandleResident(this.BindlessHandler);

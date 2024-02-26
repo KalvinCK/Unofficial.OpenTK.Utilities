@@ -4,7 +4,7 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities.BufferObjects;
 
-public class BufferDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>, IBufferObject, IDisposable
+public class BufferDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>, IReadOnlyBufferObject, IDisposable
     where TKey : unmanaged
     where TValue : struct
 {
@@ -12,7 +12,7 @@ public class BufferDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TVa
 
     public BufferUsageHint UsageHint { get; } = BufferUsageHint.StreamDraw;
 
-    public int BufferID { get; } = IBufferObject.CreateBuffer();
+    public int BufferID { get; } = IReadOnlyBufferObject.CreateBuffer();
 
     public int Stride { get; } = Unsafe.SizeOf<TValue>();
 

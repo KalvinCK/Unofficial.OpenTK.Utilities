@@ -4,7 +4,7 @@ using OpenTK.Mathematics;
 
 namespace OpenTK.Utilities.Textures;
 
-public class TextureRectangle : TexturesImplements, ITexture2D
+public class TextureRectangle : TexturesImplements, IReadOnlyTexture2D
 {
     public TextureRectangle()
         : base(TextureTarget2d.TextureRectangle)
@@ -169,7 +169,7 @@ public class TextureRectangle : TexturesImplements, ITexture2D
         int width, int height,
         int srcLevel, int srcX, int srcY,
         int dstLevel, int dstX, int dstY, int dstZ)
-        where TTexture : ITexture
+        where TTexture : IReadOnlyTexture
     {
         return this.CopySubData(
             dstTexture,

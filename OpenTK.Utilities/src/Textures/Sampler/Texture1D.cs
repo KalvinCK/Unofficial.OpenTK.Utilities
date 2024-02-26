@@ -2,7 +2,7 @@
 
 namespace OpenTK.Utilities.Textures;
 
-public class Texture1D() : TexturesImplements(TextureTarget1d.Texture1D), ITexture1D
+public class Texture1D() : TexturesImplements(TextureTarget1d.Texture1D), IReadOnlyTexture1D
 {
     public Texture1D(TextureFormat TextureFormat, int width, int height, int levels = 1)
         : this()
@@ -120,7 +120,7 @@ public class Texture1D() : TexturesImplements(TextureTarget1d.Texture1D), ITextu
         int width,
         int srcLevel, int srcX,
         int dstLevel, int dstX, int dstY, int dstZ)
-        where TTexture : ITexture
+        where TTexture : IReadOnlyTexture
     {
         return this.CopySubData(
             dstTexture,

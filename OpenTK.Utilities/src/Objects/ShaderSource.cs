@@ -3,7 +3,7 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities.Objects;
 
-public class ShaderSource : IShaderSource, IDisposable
+public class ShaderSource : IReadOnlyShaderSource, IDisposable
 {
     private ShaderSource(int shaderID, ShaderType shaderType)
     {

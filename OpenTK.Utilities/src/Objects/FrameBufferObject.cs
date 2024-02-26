@@ -4,29 +4,23 @@ using OpenTK.Utilities.Textures;
 
 namespace OpenTK.Utilities.Objects;
 
-public class FrameBufferObject : IFrameBufferObject, IDisposable
+public class FramebufferObject : IReadOnlyFramebufferObject, IDisposable
 {
-    public FrameBufferObject()
+    public FramebufferObject()
     {
-        this.BufferID = IFrameBufferObject.CreateBuffer();
-    }
-
-    internal FrameBufferObject(int buffer)
-    {
-        this.BufferID = buffer;
+        this.BufferID = IReadOnlyFramebufferObject.CreateBuffer();
     }
 
     public int BufferID { get; private set; }
 
+    public FramebufferStatus GetStatus(FramebufferTarget framebufferTarget)
+    {
+        return GL.CheckNamedFramebufferStatus(this.BufferID, framebufferTarget);
+    }
+
     public void Bind(FramebufferTarget FramebufferTarget = FramebufferTarget.Framebuffer)
     {
         GL.BindFramebuffer(FramebufferTarget, this.BufferID);
-        IFrameBufferObject.BufferBindedInContext = this.BufferID;
-    }
-
-    public FramebufferStatus GetStatus()
-    {
-        return GL.CheckNamedFramebufferStatus(this.BufferID, FramebufferTarget.Framebuffer);
     }
 
     public void BindAndClear(ClearBufferMask ClearBufferMask, FramebufferTarget FramebufferTarget = FramebufferTarget.Framebuffer)
@@ -36,24 +30,25 @@ public class FrameBufferObject : IFrameBufferObject, IDisposable
     }
 
     public void SetTexture<TTexture>(FramebufferAttachment FramebufferAttachment, TTexture texture, int level = 0)
-        where TTexture : ITexture
+        where TTexture : IReadOnlyTexture
     {
         GL.NamedFramebufferTexture(this.BufferID, FramebufferAttachment, texture.BufferID, level);
     }
 
     public void SetTextureLayer<TTexture>(FramebufferAttachment FramebufferAttachment, TTexture Texture, int layer, int level = 0)
-        where TTexture : ITexture
+        where TTexture : IReadOnlyTexture
     {
         GL.NamedFramebufferTextureLayer(this.BufferID, FramebufferAttachment, Texture.BufferID, level, layer);
     }
 
     public void SetTextureCubeMap<TTexture>(FramebufferAttachment FramebufferAttachment, TTexture Texture, CubeMapLayer layer, int level = 0)
-        where TTexture : ITexture
+        where TTexture : IReadOnlyTexture
     {
         GL.NamedFramebufferTextureLayer(this.BufferID, FramebufferAttachment, Texture.BufferID, level, (int)layer);
     }
 
-    public void SetRenderBuffer(FramebufferAttachment attachment, RenderBufferObject renderBuffer)
+    public void SetRenderBuffer<TRenderB>(FramebufferAttachment attachment, TRenderB renderBuffer)
+        where TRenderB : IReadOnlyRenderbufferObject
     {
         GL.NamedFramebufferRenderbuffer(this.BufferID, attachment, RenderbufferTarget.Renderbuffer, renderBuffer.BufferID);
     }
@@ -81,7 +76,7 @@ public class FrameBufferObject : IFrameBufferObject, IDisposable
         GL.NamedFramebufferReadBuffer(this.BufferID, readBufferMode);
     }
 
-    public void Blit(in FrameBufferObject drawFrameBuffer, int width, int height, BlitFramebufferFilter blitFramebufferFilter, ClearBufferMask bufferMask, int srcX = 0, int srcY = 0, int dstX = 0, int dstY = 0)
+    public void Blit(in FramebufferObject drawFrameBuffer, int width, int height, BlitFramebufferFilter blitFramebufferFilter, ClearBufferMask bufferMask, int srcX = 0, int srcY = 0, int dstX = 0, int dstY = 0)
     {
         GL.BlitNamedFramebuffer(this.BufferID, drawFrameBuffer.BufferID, srcX, srcY, width, height, dstX, dstY, width, height, bufferMask, blitFramebufferFilter);
     }
@@ -107,7 +102,7 @@ public class FrameBufferObject : IFrameBufferObject, IDisposable
     }
 
     public Tx2D ExtractTextureColor<Tx2D>(Size sizeTex)
-        where Tx2D : ITexture2D
+        where Tx2D : IReadOnlyTexture2D
     {
         if (typeof(Tx2D) == typeof(TextureRectangle))
         {
@@ -127,9 +122,9 @@ public class FrameBufferObject : IFrameBufferObject, IDisposable
         ref TTexture2D drawTexture,
         BlitFramebufferFilter BlitFramebufferFilter = BlitFramebufferFilter.Nearest,
         ClearBufferMask ClearBufferMask = ClearBufferMask.ColorBufferBit)
-        where TTexture2D : ITexture2D
+        where TTexture2D : IReadOnlyTexture2D
     {
-        using var drawFrame = new FrameBufferObject();
+        using var drawFrame = new FramebufferObject();
         drawFrame.SetTexture(FramebufferAttachment.ColorAttachment0, drawTexture);
 
         this.Blit(drawFrame, drawTexture.Width, drawTexture.Height, BlitFramebufferFilter, ClearBufferMask);

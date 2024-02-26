@@ -3,65 +3,49 @@ using OpenTK.Utilities.BufferObjects;
 
 namespace OpenTK.Utilities.Objects;
 
-public class VertexArrayObject : IVertexArrayObject, IDisposable
+public class VertexArrayObject : IReadOnlyVertexArrayObject, IDisposable
 {
     public VertexArrayObject()
     {
-        this.BufferID = IVertexArrayObject.CreateBuffer();
+        this.BufferID = IReadOnlyVertexArrayObject.CreateBuffer();
     }
 
     public int BufferID { get; private set; }
 
-    public void Dispose()
-    {
-        this.Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    public virtual void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            GL.DeleteVertexArray(this.BufferID);
-            this.BufferID = 0;
-        }
-    }
-
     public void Bind()
     {
         GL.BindVertexArray(this.BufferID);
-        IVertexArrayObject.BufferBindedInContext = this.BufferID;
     }
 
-    public void SetElementBuffer<TBuffer>(TBuffer BufferObject)
-        where TBuffer : IBuffer
+    public void FixElementBuffer<TBuffer>(TBuffer bufferObject)
+        where TBuffer : IReadOnlyBuffer
     {
-        GL.VertexArrayElementBuffer(this.BufferID, BufferObject.BufferID);
+        GL.VertexArrayElementBuffer(this.BufferID, bufferObject.BufferID);
     }
 
-    public void AddVertexBuffer<TBuffer>(int BindingIndex, TBuffer BufferObject, int BufferOffset = 0)
-        where TBuffer : IBufferObject
+    public void FixVertexBuffer<TBuffer>(TBuffer bufferObject)
+        where TBuffer : IReadOnlyBufferObject
     {
-        GL.VertexArrayVertexBuffer(this.BufferID, BindingIndex, BufferObject.BufferID, BufferOffset, BufferObject.Stride);
+        GL.VertexArrayVertexBuffer(this.BufferID, 0, bufferObject.BufferID, 0, bufferObject.Stride);
     }
 
-    public void AddVertexBuffer<TBuffer>(int BindingIndex, TBuffer BufferObject, int VertexStride, int BufferOffset = 0)
-        where TBuffer : IBuffer
+    public void IncludeVertexBuffer<TBuffer>(int bindingIndex, TBuffer bufferObject, int vertexStride, int bufferOffset = 0)
+        where TBuffer : IReadOnlyBuffer
     {
-        GL.VertexArrayVertexBuffer(this.BufferID, BindingIndex, BufferObject.BufferID, BufferOffset, VertexStride);
+        GL.VertexArrayVertexBuffer(this.BufferID, bindingIndex, bufferObject.BufferID, bufferOffset, vertexStride);
     }
 
-    public void SetAttribFormat(int BindingIndex, int AttribIndex, int Count, VertexAttribType VertexAttribType, int RelativeOffset, bool Normalize = false)
-    {
-        GL.EnableVertexArrayAttrib(this.BufferID, AttribIndex);
-        GL.VertexArrayAttribFormat(this.BufferID, AttribIndex, Count, VertexAttribType, Normalize, RelativeOffset);
-        GL.VertexArrayAttribBinding(this.BufferID, AttribIndex, BindingIndex);
-    }
-
-    public void SetAttribFormatI(int bindingIndex, int attribIndex, int attribTypeElements, VertexAttribType VertexAttribType, int relativeOffset)
+    public void SetAttribFormat(int bindingIndex, int attribIndex, int Count, VertexAttribType type, int relativeOffset, bool normalize = false)
     {
         GL.EnableVertexArrayAttrib(this.BufferID, attribIndex);
-        GL.VertexArrayAttribIFormat(this.BufferID, attribIndex, attribTypeElements, VertexAttribType, relativeOffset);
+        GL.VertexArrayAttribFormat(this.BufferID, attribIndex, Count, type, normalize, relativeOffset);
+        GL.VertexArrayAttribBinding(this.BufferID, attribIndex, bindingIndex);
+    }
+
+    public void SetAttribFormatI(int bindingIndex, int attribIndex, int attribTypeElements, VertexAttribType type, int relativeOffset)
+    {
+        GL.EnableVertexArrayAttrib(this.BufferID, attribIndex);
+        GL.VertexArrayAttribIFormat(this.BufferID, attribIndex, attribTypeElements, type, relativeOffset);
         GL.VertexArrayAttribBinding(this.BufferID, attribIndex, bindingIndex);
     }
 
@@ -73,5 +57,20 @@ public class VertexArrayObject : IVertexArrayObject, IDisposable
     public void DisableVertexAttribute(int attribIndex)
     {
         GL.DisableVertexArrayAttrib(this.BufferID, attribIndex);
+    }
+
+    public void Dispose()
+    {
+        this.Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            GL.DeleteVertexArray(this.BufferID);
+            this.BufferID = 0;
+        }
     }
 }

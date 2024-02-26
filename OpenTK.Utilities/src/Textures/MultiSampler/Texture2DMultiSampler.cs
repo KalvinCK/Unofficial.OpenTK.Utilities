@@ -3,9 +3,9 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities.Textures;
 
-public class Texture2DMultiSampler() : TexturesMultiSamplerImplements(TextureTargetMultisample2d.Texture2DMultisample)
+public class Texture2DMultisampler() : TexturesMultisamplerImplements(TextureTargetMultisample2d.Texture2DMultisample)
 {
-    public Texture2DMultiSampler(TextureFormat TextureFormat, int width, int height, int samples = 4, bool fixedSampleLocations = true)
+    public Texture2DMultisampler(TextureFormat TextureFormat, int width, int height, int samples = 4, bool fixedSampleLocations = true)
         : this()
     {
         this.AllocateTextures(TextureFormat, width, height, 1, samples, fixedSampleLocations);

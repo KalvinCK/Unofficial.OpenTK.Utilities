@@ -4,7 +4,7 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities.BufferObjects;
 
-public class BufferImmutable<T>(StorageUseFlag StorageImmutable = StorageUseFlag.DynamicStorageBit) : IBufferObject, IDisposable
+public class BufferImmutable<T>(StorageUseFlag StorageImmutable = StorageUseFlag.DynamicStorageBit) : IReadOnlyBufferObject, IDisposable
     where T : struct
 {
     private BufferStorageFlags flags = (BufferStorageFlags)StorageImmutable;
@@ -48,7 +48,7 @@ public class BufferImmutable<T>(StorageUseFlag StorageImmutable = StorageUseFlag
     #region Props
     public int Stride { get; } = Unsafe.SizeOf<T>();
 
-    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
+    public int BufferID { get; private set; } = IReadOnlyBufferObject.CreateBuffer();
 
     public bool Allocated { get; private set; }
 

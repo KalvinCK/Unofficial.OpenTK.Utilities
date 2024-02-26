@@ -1,15 +1,21 @@
+
 # OpenTK.Utility Extension Library
 
 ##### This C# library was developed to provide an intuitive and efficient interface for graphics rendering using OpenGL through the OpenTK library. It offers a wide range of functionalities to create and manipulate OpenGL objects, buffers, textures of various types, and more. This project allows developers to create graphic applications with ease.
 
 #### Key Features
-* DSA: Structured and Organized OpenGL Objects leveraging Modern OpenGL and extensive use of Direct State Access (DSA).
+* Structured and Organized OpenGL Objects leveraging Modern OpenGL and extensive use of Direct State Access (DSA).
 
-* Structured Buffers: Full support for creating and managing well-structured buffers that are easy to use and ensure complete security in data manipulation and access.
+* Full support for creating and managing well-structured buffers that are easy to use and ensure complete security in data manipulation and access.
 
-* Versatile Textures: Support for a variety of texture types, including 1D, 2D, 3D, cube textures, and array textures, enabling a wide range of visual effects in your applications.
+* Support for a variety of texture types, including 1D, 2D, 3D, cube textures, and array textures, enabling a wide range of visual effects in your applications.
 
-* Image processing: This library includes built-in support for Reading and writing images using StbImageSharp and StbimageWriterSharp, seamlessly integrated into the codebase. This feature allows for effortless loading of various image formats directly within the library without external dependencies
+* This library includes built-in support for Reading and writing images using StbImageSharp and StbimageWriterSharp, seamlessly integrated into the codebase. This feature allows for effortless loading of various image formats directly within the library without external dependencies
+
+* The development was designed to be extensible, so almost everything has interfaces, so you can use your own codes if the project structure doesn't suit you.
+
+* It provides control to OpenGL where if you do something that compromises the state of OpenGL, an exception can be thrown with information about what was done wrong.
+Remember that you can't control everything, so errors can still arise, keep that in mind.
 
 #### Installation
 To use this library in your project, you can clone the repository directly to your local machine. After cloning the repository, you'll be able to reference the project within your own development environment. This method provides flexibility and control over integrating the library into your project, allowing you to easily track updates and contribute to the source code if desired.
@@ -17,6 +23,19 @@ To use this library in your project, you can clone the repository directly to yo
 Currently, there is no package available in the form of a pre-packaged distribution file (such as a NuGet package), but this may be provided in the future. Referencing the cloned project is a convenient way to start using the library while waiting for a formal distribution.
 
 ### Usage Examples
+
+###### Namespaces
+```csharp
+OpenTK.Utilities
+OpenTK.Utilities.Textures
+OpenTK.Utilities.Objects
+OpenTK.Utilities.BuffersObjects
+OpenTK.Utilities.Images
+OpenTK.Utilities.Assistants
+```
+
+
+
 ___
 ###### Vertexs Arrays
 ```csharp
@@ -107,11 +126,11 @@ bufferMutable.Dispose();
 ```
 ___
 ###### Shaders
-**warning:** Just to remember, I decided to call 'GLShaderProgram' just Shader.
+**warning:** Just to remember, I decided to call 'GLShaderProgram' just ShaderObject.
 
 Using the Traditional way
 ```csharp
-ShaderSample = Shader.CreateProgram(
+ShaderSample = ShaderObject.CreateProgram(
     ShaderLoader.FromFile(ShaderType.VertexShader, "Resources/Vertex.vert"),
     ShaderLoader.FromFile(ShaderType.FragmentShader, "Resources/Fragment.frag"))
 {
@@ -123,19 +142,14 @@ ShaderSample.Uniform("Model", transform.ModelMatrix);
 
 VertexArrayObject.SetAttribFormat(0, ShaderSample.GetAttribute("insPos"), 3, VertexAttribType.Float, (int)Marshal.OffsetOf<Data>("Pos"));
 // Exception: OpenTK.Utilities.AttributeNotFoundException: 'Attribute: 'insPos' not found.'
-
-// Draw
-ShaderSample.Use();
-VertexArrayObject.Bind();
-GL.DrawElements(PrimitiveType.Triangles, BufferElements.Count, DrawElementsType.UnsignedInt, 0);
 ```
 Combined with pipeline object
 ```csharp
 // Note that it must be created in a separable way.
-ShaderProgVert = Shader.CreateProgramSeparable(
+ShaderProgVert = ShaderObject.CreateProgramSeparable(
     ShaderSource.FromFile(ShaderType.VertexShader, "Resources/Vertex.vert"));
 
-ShaderProgFrag = Shader.CreateProgramSeparable(
+ShaderProgFrag = ShaderObject.CreateProgramSeparable(
     ShaderSource.FromFile(ShaderType.FragmentShader, "Resources/Fragment.frag"));
 
 Pipeline = new Pipeline();
@@ -143,21 +157,52 @@ Pipeline.SetShader(ShaderProgVert, ShaderProgFrag);
 ```
 It could be
 ```csharp
-ShaderSample = Shader.CreateProgram(
+ShaderSample = ShaderObject.CreateProgram(
+    separable: true,
     ShaderSource.FromFile(ShaderType.VertexShader, "Resources/Vertex.vert"),
     ShaderSource.FromFile(ShaderType.FragmentShader, "Resources/Fragment.frag"));
 
-Pipeline = new Pipeline();
+Pipeline = new PipelineObject();
 
 Pipeline.SetShader(ShaderSample);
 // or
 Pipeline.SetShaderAllStages(ShaderSample);
 
-// Draw
-Pipeline.bind();
-VertexArrayObject.Bind();
-GL.DrawElements(PrimitiveType.Triangles, BufferElements.Count, DrawElementsType.UnsignedInt, 0);
 ```
+##### Drawing
+```csharp
+Pipeline.Bind();
+VertexArrayObject.Bind();
+Drawing.DrawElements(DrawElementsType.UnsignedInt, BufferElements.Count);
+Drawing.ResetDrawingContext();
+
+// Or 
+
+using var BufferIndiretCmd = new BufferConstant<DrawElementsIndirectCommand>();
+
+BufferIndiretCmd.Data = new DrawElementsIndirectCommand
+{
+    Base = 0,
+    Count = BufferElements.Count,
+    BaseInstance = 0,
+    InstanceCount = 100,
+    BaseVertex = 0,
+};
+
+Pipeline.Bind();
+VertexArrayObject.Bind();
+Drawing.DrawElementsIndirect(BufferIndiretCmd, DrawElementsType.UnsignedInt);
+// It is advisable to use this depending on the way you choose to render your objects. 
+// Even more so if you are using both the pipeline object and the shader object in your application.
+Drawing.ResetDrawingContext();
+
+// For the most inexperienced ex:
+// If you render using a pipeline object and then try to render 
+// with a shader object and have not restored the pipeline context 
+// it will not render anything, at render time it must either have a 
+// shader program linked, or a pipeline program.
+```
+
 ___
 ##### Texture 
 Load
@@ -177,12 +222,32 @@ Save
 ```csharp
 if(ImGui.Button("SaveScreen"))
 {
-    using Texture2D screenTex = IFrameBufferObject.Default.ExtractTextureColor<Texture2D>(WinSize);
+    using Texture2D screenTex = Context.Binding.FramebufferBinding.Default.ExtractTextureColor<Texture2D>(WinSize);
     TextureManager.SaveJpg(screenTex, filePath: "Resources", fileName: "ScreenShoot", 100)
 }
 ```
 <image src="Test/Resources/ScreenShoot.jpg" alt="Screen capture">
 
+___
+###### Device
+```csharp
+Console.WriteLine($"Renderer: {Context.Device.Renderer}");
+Console.WriteLine($"Vendor: {Context.Device.Vendor}");
+Console.WriteLine($"Version: {Context.Device.Version}");
+Console.WriteLine($"Major Minor Version: {Context.Device.MajorMinorVersion}");
+Console.WriteLine($"Shading Language Version: {Context.Device.ShadingLanguageVersion}");
+Console.WriteLine($"Memory Total: {Context.Device.GpuMemory.MemoryTotal}");
+Console.WriteLine($"Memory Available: {Context.Device.GpuMemory.MemoryAvailable}");
+Console.WriteLine($"Memory Usage: {Context.Device.GpuMemory.MemoryUsage}");
+```
+Renderer: NVIDIA GeForce GTX 660/PCIe/SSE2
+Vendor: NVIDIA Corporation
+Version: 4.6.0 NVIDIA 474.44
+Major Minor Version: 4,6
+Shading Language Version: 4.60 NVIDIA
+Memory Total: 2048
+Memory Available: 1156
+Memory Usage: 892
 ___
 
 #### Contribution

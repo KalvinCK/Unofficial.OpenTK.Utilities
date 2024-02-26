@@ -3,7 +3,7 @@ using OpenTK.Mathematics;
 
 namespace OpenTK.Utilities.Textures;
 
-public class Texture3D() : TexturesImplements(TextureTarget3d.TextureCubeMapArray), ITexture3D
+public class Texture3D() : TexturesImplements(TextureTarget3d.TextureCubeMapArray), IReadOnlyTexture3D
 {
     public Texture3D(TextureFormat TextureFormat, int width, int height, int depth, int levels = 1)
         : this()
@@ -141,7 +141,7 @@ public class Texture3D() : TexturesImplements(TextureTarget3d.TextureCubeMapArra
         int width, int height, int layers,
         int srcLevel, int srcX, int srcY, int layerOffsetZ,
         int dstLevel, int dstX, int dstY, int dstZ)
-        where TTexture : ITexture
+        where TTexture : IReadOnlyTexture
     {
         return this.CopySubData(
             dstTexture,

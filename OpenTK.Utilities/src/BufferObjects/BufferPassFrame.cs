@@ -3,7 +3,7 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities.BufferObjects;
 
-public class BufferPassFrame<T> : IBufferObject, IDisposable
+public class BufferPassFrame<T> : IReadOnlyBufferObject, IDisposable
     where T : struct
 {
     private readonly BufferUsageHint usageHint = BufferUsageHint.StreamDraw;
@@ -24,7 +24,7 @@ public class BufferPassFrame<T> : IBufferObject, IDisposable
     #region Props
     public int Stride { get; } = Unsafe.SizeOf<T>();
 
-    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
+    public int BufferID { get; private set; } = IReadOnlyBufferObject.CreateBuffer();
 
     /// <summary>
     /// Gets the number of elements in the current frame pass.

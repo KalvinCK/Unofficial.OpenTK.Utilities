@@ -51,11 +51,7 @@ class Window : GameWindow
     protected override void OnLoad()
     {
         base.OnLoad();
-        GL.ClearColor(0.1f, 0.1f, 0.1f, 1f);
         App = new App(this);
-
-
-
     }
 
     protected override void OnUnload()
@@ -73,6 +69,5 @@ class Window : GameWindow
     {
         base.OnResize(e);
         App?.Resize(new Size(e.Width, e.Height));
-        GL.Viewport(new Point(0, 0), new Size(e.Width, e.Height));
     }
 }

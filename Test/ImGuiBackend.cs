@@ -9,6 +9,7 @@ using OpenTK.Graphics.OpenGL4;
 using OpenTK.Utilities.Objects;
 using OpenTK.Utilities.BufferObjects;
 using OpenTK.Utilities.Textures;
+using OpenTK.Utilities;
 
 namespace Test;
 
@@ -16,7 +17,7 @@ public class ImGuiBackend : IDisposable
 {
     public bool IsIgnoreMouseInput { get; set; } = false;
 
-    private readonly Shader ShaderProg;
+    private readonly ShaderObject ShaderProg;
     private readonly Texture2D FontTexture;
     private readonly VertexArrayObject Vao;
     private readonly BufferUnstructured VertBuffer;
@@ -110,7 +111,7 @@ public class ImGuiBackend : IDisposable
             }";
         #endregion
 
-        ShaderProg = Shader.CreateProgram(
+        ShaderProg = ShaderObject.CreateProgram(
             ShaderSource.FromText(ShaderType.VertexShader, vertexSource),
             ShaderSource.FromText(ShaderType.FragmentShader, fragmentSource));
 
@@ -131,8 +132,8 @@ public class ImGuiBackend : IDisposable
         ElemBuffer.ReserveImmutableMemory(2000, IntPtr.Zero);
 
         Vao = new VertexArrayObject();
-        Vao.SetElementBuffer(ElemBuffer);
-        Vao.AddVertexBuffer(0, VertBuffer, VertStride);
+        Vao.FixElementBuffer(ElemBuffer);
+        Vao.IncludeVertexBuffer(0, VertBuffer, VertStride);
         Vao.SetAttribFormat(0, 0, 2, VertexAttribType.Float, 0 * sizeof(float));
         Vao.SetAttribFormat(0, 1, 2, VertexAttribType.Float, 2 * sizeof(float));
         Vao.SetAttribFormat(0, 2, 4, VertexAttribType.UnsignedByte, 4 * sizeof(float), true);
@@ -254,23 +255,23 @@ public class ImGuiBackend : IDisposable
         {
             ImDrawListPtr cmdList = drawData.CmdLists[i];
             int vertexSize = cmdList.VtxBuffer.Size * VertStride;
-            if (vertexSize > VertBuffer.MemoryBytesSize)
+            if (vertexSize > VertBuffer.MemorySize)
             {
-                int newSize = (int)Math.Max(VertBuffer.MemoryBytesSize * 1.5f, vertexSize);
+                int newSize = (int)Math.Max(VertBuffer.MemorySize * 1.5f, vertexSize);
                 VertBuffer.ReserveImmutableMemory(newSize, IntPtr.Zero);
             }
 
             int indexSize = cmdList.IdxBuffer.Size * ElemStride;
-            if (indexSize > ElemBuffer.MemoryBytesSize)
+            if (indexSize > ElemBuffer.MemorySize)
             {
-                int newSize = (int)Math.Max(ElemBuffer.MemoryBytesSize * 1.5f, indexSize);
+                int newSize = (int)Math.Max(ElemBuffer.MemorySize * 1.5f, indexSize);
                 ElemBuffer.ReserveImmutableMemory(newSize, IntPtr.Zero);
 
             }
         }
 
         
-        ShaderProg.Use();
+        ShaderProg.Bind();
         Vao.Bind();
 
         ImGuiIOPtr io = ImGui.GetIO();
@@ -308,8 +309,7 @@ public class ImGuiBackend : IDisposable
             }
         }
 
-        IShader.ClearContext();
-
+        Drawing.ResetDrawingContext();
     }
 
     #region Style

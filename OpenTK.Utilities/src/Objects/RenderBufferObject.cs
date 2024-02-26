@@ -2,11 +2,11 @@
 
 namespace OpenTK.Utilities.Objects;
 
-public class RenderBufferObject : IRenderBufferObject, IDisposable
+public class RenderbufferObject : IReadOnlyRenderbufferObject, IDisposable
 {
-    public RenderBufferObject()
+    public RenderbufferObject()
     {
-        this.BufferID = IRenderBufferObject.CreateBuffer();
+        this.BufferID = IReadOnlyRenderbufferObject.CreateBuffer();
     }
 
     public int BufferID { get; private set; }
@@ -14,7 +14,6 @@ public class RenderBufferObject : IRenderBufferObject, IDisposable
     public void Bind()
     {
         GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, this.BufferID);
-        IRenderBufferObject.BufferBindedInContext = this.BufferID;
     }
 
     public void Storage(RenderbufferStorage RenderbufferStorage, int width, int height)

@@ -3,7 +3,7 @@ using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 
 namespace OpenTK.Utilities.Textures;
-public class TextureCubeMap() : TexturesImplements(TextureTarget2d.TextureCubeMap), ITexture3D
+public class TextureCubeMap() : TexturesImplements(TextureTarget2d.TextureCubeMap), IReadOnlyTexture3D
 {
     public TextureCubeMap(TextureFormat TextureFormat, int width, int height, int levels = 1)
         : this()
@@ -147,7 +147,7 @@ public class TextureCubeMap() : TexturesImplements(TextureTarget2d.TextureCubeMa
         int width, int height,
         int srcLevel, int srcX, int srcY, CubeMapLayer CubeMapLayer,
         int dstLevel, int dstX, int dstY, int dstZ)
-        where TTexture : ITexture
+        where TTexture : IReadOnlyTexture
     {
         return this.CopySubData(
             dstTexture,

@@ -3,7 +3,7 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities.BufferObjects;
 
-public class BufferConstant<T> : IBufferObject, IDisposable
+public class BufferConstant<T> : IReadOnlyBufferObject, IDisposable
     where T : struct
 {
     private const BufferAccessMask BufferFlags = BufferAccessMask.MapReadBit | BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit;
@@ -16,7 +16,7 @@ public class BufferConstant<T> : IBufferObject, IDisposable
 
     public int Stride { get; } = Unsafe.SizeOf<T>();
 
-    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
+    public int BufferID { get; private set; } = IReadOnlyBufferObject.CreateBuffer();
 
     public int MemorySize { get; private set; } = Unsafe.SizeOf<T>();
 

@@ -2,18 +2,18 @@
 
 namespace OpenTK.Utilities.Textures;
 
-public abstract class TexturesMultiSamplerImplements : ITexture, IDisposable
+public abstract class TexturesMultisamplerImplements : IReadOnlyTexture, IDisposable
 {
     private long textureBindlessHandler = 0;
 
-    public TexturesMultiSamplerImplements(TextureTargetMultisample2d TextureTargetMudltisample2d)
+    public TexturesMultisamplerImplements(TextureTargetMultisample2d TextureTargetMudltisample2d)
     {
         this.Dimension = TextureDimension.Two;
         this.Target = (TextureTarget)TextureTargetMudltisample2d;
         this.CreateNewTextureBuffer();
     }
 
-    public TexturesMultiSamplerImplements(TextureTargetMultisample3d TextureTargetMultisample3d)
+    public TexturesMultisamplerImplements(TextureTargetMultisample3d TextureTargetMultisample3d)
     {
         this.Dimension = TextureDimension.Three;
         this.Target = (TextureTarget)TextureTargetMultisample3d;
@@ -156,7 +156,7 @@ public abstract class TexturesMultiSamplerImplements : ITexture, IDisposable
     private void CreateNewTextureBuffer()
     {
         this.DeleteTexture();
-        this.BufferID = ITexture.CreateTextureBuffer(this.Target);
+        this.BufferID = IReadOnlyTexture.CreateTextureBuffer(this.Target);
     }
 
     private bool CompareParams(TextureFormat TextureFormat, int width, int height, int depth, int samples, bool fixedSampleLocations)

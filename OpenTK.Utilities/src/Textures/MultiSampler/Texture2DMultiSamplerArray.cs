@@ -3,9 +3,9 @@ using OpenTK.Mathematics;
 
 namespace OpenTK.Utilities.Textures;
 
-public class Texture2DMultiSamplerArray() : TexturesMultiSamplerImplements(TextureTargetMultisample3d.Texture2DMultisampleArray)
+public class Texture2DMultisamplerArray() : TexturesMultisamplerImplements(TextureTargetMultisample3d.Texture2DMultisampleArray)
 {
-    public Texture2DMultiSamplerArray(TextureFormat TextureFormat, int width, int height, int layers, int samples = 4, bool fixedSampleLocations = true)
+    public Texture2DMultisamplerArray(TextureFormat TextureFormat, int width, int height, int layers, int samples = 4, bool fixedSampleLocations = true)
         : this()
     {
         this.AllocateTextures(TextureFormat, width, height, layers, samples, fixedSampleLocations);

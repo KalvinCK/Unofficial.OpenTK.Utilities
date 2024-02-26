@@ -10,7 +10,7 @@ public struct Logger : ILogger
 
     public Logger(string? path, string fileName)
     {
-        this.FilePath = Path.Combine(path ?? Directory.GetCurrentDirectory(), fileName) + ".logger";
+        this.FilePath = Path.Combine(path ?? Directory.GetCurrentDirectory(), fileName) + ".logger.txt";
         this.streamFile = new StreamWriter(File.Create(this.FilePath));
     }
 

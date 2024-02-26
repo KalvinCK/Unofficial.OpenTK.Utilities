@@ -5,12 +5,12 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities.BufferObjects;
 
-public class BufferCollection<T> : IEnumerable<T>, IBufferObject, IDisposable
+public class BufferCollection<T> : IEnumerable<T>, IReadOnlyBufferObject, IDisposable
     where T : struct
 {
     private List<T> collectionInternal = [];
 
-    public int BufferID { get; } = IBufferObject.CreateBuffer();
+    public int BufferID { get; private set; } = IReadOnlyBufferObject.CreateBuffer();
 
     public int Stride { get; } = Unsafe.SizeOf<T>();
 
@@ -122,6 +122,7 @@ public class BufferCollection<T> : IEnumerable<T>, IBufferObject, IDisposable
         {
             GL.DeleteBuffer(this.BufferID);
             this.collectionInternal = [];
+            this.BufferID = 0;
         }
     }
 

@@ -4,7 +4,7 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace OpenTK.Utilities.BufferObjects;
 
-public class BufferMutable<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw) : IBufferObject, IDisposable
+public class BufferMutable<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw) : IReadOnlyBufferObject, IDisposable
     where T : struct
 {
     public BufferMutable(int initialCount, BufferUsageHint BufferUsageHint = BufferUsageHint.DynamicDraw)
@@ -42,7 +42,7 @@ public class BufferMutable<T>(BufferUsageHint BufferUsageHint = BufferUsageHint.
 
     public BufferUsageHint UsageHint { get; private set; } = BufferUsageHint;
 
-    public int BufferID { get; private set; } = IBufferObject.CreateBuffer();
+    public int BufferID { get; private set; } = IReadOnlyBufferObject.CreateBuffer();
 
     public bool Allocated { get; private set; }
 

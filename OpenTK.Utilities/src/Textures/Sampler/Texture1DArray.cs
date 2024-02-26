@@ -4,7 +4,7 @@ using OpenTK.Mathematics;
 
 namespace OpenTK.Utilities.Textures;
 
-public class Texture1DArray() : TexturesImplements(TextureTarget2d.Texture1DArray), ITexture2D
+public class Texture1DArray() : TexturesImplements(TextureTarget2d.Texture1DArray), IReadOnlyTexture2D
 {
     public Texture1DArray(TextureFormat TextureFormat, int width, int layers, int levels = 1)
         : this()
@@ -132,7 +132,7 @@ public class Texture1DArray() : TexturesImplements(TextureTarget2d.Texture1DArra
         int width, int layers,
         int srcLevel, int srcX, int srcLayer,
         int dstLevel, int dstX, int dstY, int dstZ)
-        where TTexture : ITexture
+        where TTexture : IReadOnlyTexture
     {
         return this.CopySubData(
             dstTexture,

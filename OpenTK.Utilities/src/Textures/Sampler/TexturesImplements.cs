@@ -4,7 +4,7 @@ using OpenTK.Mathematics;
 
 namespace OpenTK.Utilities.Textures;
 
-public abstract class TexturesImplements : ITexture, IDisposable
+public abstract class TexturesImplements : IReadOnlyTexture, IDisposable
 {
     private long textureBindlessHandler = 0;
 
@@ -246,7 +246,7 @@ public abstract class TexturesImplements : ITexture, IDisposable
         int depth,
         int srcLevel, int srcX, int srcY, int srcZ,
         int dstLevel, int dstX, int dstY, int dstZ)
-        where TTexture : ITexture
+        where TTexture : IReadOnlyTexture
     {
         if (!this.HasAllocated || !dstTexture.HasAllocated)
         {
@@ -479,7 +479,7 @@ public abstract class TexturesImplements : ITexture, IDisposable
     private void CreateNewTextureBuffer()
     {
         this.DeleteTexture();
-        this.BufferID = ITexture.CreateTextureBuffer(this.Target);
+        this.BufferID = IReadOnlyTexture.CreateTextureBuffer(this.Target);
     }
 
     private void DeleteTexture()

@@ -8,7 +8,7 @@ namespace OpenTK.Utilities.Images;
 public static class TextureManager
 {
     public static unsafe void SaveJpg<Tx2D>(Tx2D texture, string filePath, string fileName, int quality = 100, bool flipVertically = true)
-        where Tx2D : ITexture2D
+        where Tx2D : IReadOnlyTexture2D
     {
         ImageWriteCore.FlipVerticallyOnWrite(flipVertically ? 1 : 0);
 
@@ -33,7 +33,7 @@ public static class TextureManager
     }
 
     public static unsafe void SavePNG<Tx2D>(Tx2D texture, string filePath, string fileName, bool flipVertically = true)
-        where Tx2D : ITexture2D
+        where Tx2D : IReadOnlyTexture2D
     {
         ImageWriteCore.FlipVerticallyOnWrite(flipVertically ? 1 : 0);
         using FileStream fileStream = File.OpenWrite($"{Path.Combine(filePath, fileName)}.png");
